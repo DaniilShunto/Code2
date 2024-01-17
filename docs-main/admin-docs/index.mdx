@@ -1,0 +1,17 @@
+---
+sidebar_position: 0
+---
+
+# OpenTalk Administration
+
+OpenTalk consists of several components that provide different services, some
+mandatory, some optional. Each of these services is documented in a separate
+section.
+
+| Component                            | Required | Description                                                                       |
+| ------------------------------------ | -------- | --------------------------------------------------------------------------------- |
+| [OpenTalk Controller](controller/)   | Yes      | Web API and meeting signaling which is accessed by the frontend                   |
+| [OpenTalk Obelisk](obelisk/)         | No       | Service for participating in a meeting through call-in services, e.g. through SIP |
+| [OpenTalk Recorder](recorder/)       | No       | Service for recording and streaming meetings                                      |
+| [OpenTalk SMTP Mailer](smtp-mailer/) | No       | Service for sending out invitation and other notification mails to participants   |
+

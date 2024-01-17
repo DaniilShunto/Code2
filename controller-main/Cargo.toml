@@ -1,0 +1,76 @@
+# SPDX-FileCopyrightText: OpenTalk GmbH <mail@opentalk.eu>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+[workspace]
+members = ["crates/*", "xtask"]
+resolver = "2"
+
+[workspace.package]
+authors = ["OpenTalk Team <mail@opentalk.eu>"]
+version = "0.0.0-dev"
+
+[workspace.dependencies]
+actix-http = "3"
+actix-rt = "2"
+actix-web = { version = "4", default-features = true }
+actix-web-httpauth = "0.8"
+anstream = "0.6"
+anyhow = "1"
+arc-swap = "1"
+async-trait = "0.1"
+aws-sdk-s3 = "0.28"
+base64 = "0.21"
+bincode = "1"
+bytes = "1"
+bytestring = "1"
+chrono = "0.4"
+chrono-tz = "0.8"
+clap = { version = "4", features = ["derive"] }
+config = { version = "0.13", default-features = false, features = ["toml"] }
+derive_more = "0.99"
+diesel = "2"
+diesel-async = "0.3"
+displaydoc = "0.2"
+either = "1"
+email_address = "0.2.4"
+env_logger = "0.10"
+futures = "0.3"
+http = "0.2"
+itertools = "0.12"
+lapin = { version = "2", default-features = false }
+log = "0.4"
+md5 = "0.7"
+openidconnect = "3"
+opentelemetry = { version = "0.19", default-features = false, features = ["metrics"] }
+owo-colors = "3"
+parking_lot = "0.12"
+percent-encoding = "2"
+phonenumber = "0.3"
+pretty_assertions = "1"
+proc-macro-crate = "2"
+proc-macro2 = "1"
+quote = "1"
+rand = "0.8"
+redis = "0.24"
+reqwest = { version = "0.11", default-features = false }
+rustc-hash = "1.1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_repr = "0.1"
+serial_test = "2"
+strum = { version = "0.25", features = ["derive"] }
+syn = "1"
+thiserror = "1"
+tokio = "1"
+tokio-stream = { version = "0.1", features = ["sync"] }
+tracing = "0.1"
+tracing-opentelemetry = "0.19"
+url = "2"
+uuid = "1"
+validator = { version = "0.16", features = ["derive"] }
+
+[workspace.dependencies.casbin]
+git = "https://github.com/kbalt/casbin-rs.git"
+rev = "a5cd79704726b423030942769779ea7d4e8129ee"
+default-features = false

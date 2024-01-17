@@ -1,0 +1,20 @@
+# SPDX-FileCopyrightText: OpenTalk GmbH <mail@opentalk.eu>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+[package]
+default-run = "opentalk-controller"
+name = "opentalk-controller"
+edition = "2021"
+license = "EUPL-1.2"
+authors.workspace = true
+version.workspace = true
+publish = false
+
+[dependencies]
+controller = { path = "../../crates/controller", package = "opentalk-controller-core" }
+community-modules = { path = "../../crates/community-modules", package = "opentalk-community-modules" }
+anyhow.workspace = true
+actix-web.workspace = true
+anstream.workspace = true
+owo-colors.workspace = true

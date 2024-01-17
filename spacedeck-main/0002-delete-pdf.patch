@@ -1,0 +1,70 @@
+SPDX-FileCopyrightText: OpenTalk GmbH <mail@opentalk.eu>
+SPDX-License-Identifier: EUPL-1.2 or AGPL-3.0-or-later
+
+diff --git a/models/db.js b/models/db.js
+index c6e17c8..6360937 100644
+--- a/models/db.js
++++ b/models/db.js
+@@ -102,6 +102,13 @@ var db = module.exports = {
+     thumbnail_updated_at: {type: Sequelize.DATE}
+   }),
+ 
++  Pdf: sequelize.define('pdfs', {
++    _id: {type: Sequelize.STRING, primaryKey: true},
++    space_id: Sequelize.STRING,
++    object_name: {type: Sequelize.STRING},
++    created_at: {type: Sequelize.DATE, defaultValue: Sequelize.NOW},
++  }),
++
+   Membership: sequelize.define('membership', {
+     _id: {type: Sequelize.STRING, primaryKey: true},
+     space_id: Sequelize.STRING,
+diff --git a/routes/api/space_exports.js b/routes/api/space_exports.js
+index 4479787..ebd5a01 100644
+--- a/routes/api/space_exports.js
++++ b/routes/api/space_exports.js
+@@ -1,6 +1,7 @@
+ "use strict";
+ var config = require('config');
+ const db = require('../../models/db');
++const { v4: uuidv4 } = require('uuid');
+ 
+ var mailer = require('../../helpers/mailer');
+ var uploader = require('../../helpers/uploader');
+@@ -120,6 +121,13 @@ router.get('/pdf', function(req, res, next) {
+           console.log('unlink', local_path);
+         }
+       });
++
++      db.Pdf.create({
++        _id: uuidv4(),
++        space_id: req.space._id,
++        object_name: s3_filename,
++      });
++
+     });
+   }, (err) => {
+     res.status(500).json({
+diff --git a/routes/api/spaces.js b/routes/api/spaces.js
+index feac955..7e27287 100644
+--- a/routes/api/spaces.js
++++ b/routes/api/spaces.js
+@@ -348,6 +348,18 @@ router.delete('/:id', function(req, res, next) {
+ 
+     if (req.spaceRole == "admin") {
+       const attrs = req.body;
++
++      db.Pdf.findAll({ where: { space_id: space._id }}).then(all => {
++        all.forEach(pdf => {
++          uploader.removeFile(pdf.object_name, function(err, res) {
++            if (err) {
++              console.log("Failed to delete PDF: " + err)
++            }
++          });
++          pdf.destroy();
++        });
++      });
++
+       space.destroy().then(function() {
+         res.distributeDelete("Space", space);
+       });

@@ -1,0 +1,9 @@
+build
+.*
+craco.config.js
+README.md
+CHANGELOG.md
+tsconfig.json
+app/public
+app/devPublic
+*.svg

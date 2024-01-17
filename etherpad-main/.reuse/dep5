@@ -1,0 +1,13 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Source: https://git.opentalk.dev/opentalk/smtp-mailer
+Upstream-Name: OpenTalk Etherpad
+Upstream-Contact: OpenTalk GmbH <mail@opentalk.eu>
+
+Files:
+ README.md
+ ep_read_session/README.md
+ ep_read_session/ep.json
+ ep_read_session/package-lock.json
+ ep_read_session/package.json
+Copyright: OpenTalk GmbH <mail@opentalk.eu>
+License: EUPL-1.2

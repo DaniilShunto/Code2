@@ -1,0 +1,63 @@
+# SPDX-FileCopyrightText: OpenTalk GmbH <mail@opentalk.eu>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+[package]
+name = "opentalk-db-storage"
+edition = "2021"
+license = "EUPL-1.2"
+authors.workspace = true
+version.workspace = true
+publish = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+controller-settings = { path = "../controller-settings", package = "opentalk-controller-settings" }
+database = { path = "../database", package = "opentalk-database" }
+kustos = { path = "../kustos" }
+types = { path = "../types", package = "opentalk-types", features = ["backend"] }
+
+serde.workspace = true
+serde_json = { workspace = true, features = ["raw_value"] }
+
+### Error handling
+anyhow.workspace = true
+thiserror.workspace = true
+
+### Database ORM
+diesel = { workspace = true, features = [
+    "uuid",
+    "serde_json",
+    "chrono",
+] }
+diesel-async.workspace = true
+uuid = { workspace = true, features = ["serde", "v4"] }
+
+### Database migrations
+refinery = { version = "0.8", features = ["tokio-postgres"] }
+refinery-core = "0.8"
+barrel = { version = "0.7", features = ["pg"] }
+
+### Logging utilities
+log = { workspace = true, features = ["serde"] }
+tracing.workspace = true
+
+### For migration
+tokio = { workspace = true, features = ["signal"] }
+chrono.workspace = true
+chrono-tz = { workspace = true, features = ["serde"] }
+
+strum.workspace = true
+redis-args = { path = "../redis-args" }
+diesel-newtype = { path = "../diesel-newtype", package = "opentalk-diesel-newtype" }
+derive_more.workspace = true
+
+rustc-hash.workspace = true
+md5.workspace = true
+
+[dev-dependencies]
+actix-rt.workspace = true
+serial_test.workspace = true
+test-util = { path = "../test-util", package = "opentalk-test-util", features = ["database"] }
+pretty_assertions.workspace = true

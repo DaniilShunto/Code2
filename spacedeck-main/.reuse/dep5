@@ -1,0 +1,11 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Source: https://git.opentalk.dev/opentalk/ot-spacedeck
+Upstream-Name: OpenTalk Spacedeck
+Upstream-Contact: OpenTalk GmbH <mail@opentalk.eu>
+
+Files:
+ README.md
+ custom-environment-variables.json
+ CHANGELOG.md
+Copyright: OpenTalk GmbH <mail@opentalk.eu>
+License: EUPL-1.2

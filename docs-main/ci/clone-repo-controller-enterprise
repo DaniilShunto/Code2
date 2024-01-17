@@ -1,0 +1,15 @@
+#!/bin/bash
+
+set -xe
+
+SCRIPT_DIR=$(dirname "$0")
+# shellcheck source=ci/include/clone.sh
+. "$SCRIPT_DIR"/include/clone.sh
+REPO_NAME=${REPO_NAME_CONTROLLER_ENTERPRISE:-opentalk/backend/services/controller-enterprise}
+REPO_BRANCH=${REPO_BRANCH_CONTROLLER_ENTERPRISE:-main}
+
+clone_repo "$REPO_NAME" "$REPO_BRANCH"
+
+mkdir -p developer-docs/controller/signaling/enterprise
+
+deploy_to developer-docs/controller/signaling/enterprise ".tmp/$REPO_NAME/docs/signaling/*"

@@ -1,0 +1,432 @@
+# SPDX-FileCopyrightText: OpenTalk GmbH <mail@opentalk.eu>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+---
+image: git.opentalk.dev:5050/opentalk/backend/containers/rust:1.73.0-bullseye
+
+stages:
+  - lint
+  - test
+  - check
+  - build
+  - package
+  - trigger
+
+variables:
+  # Enable one network per build for the test container and services
+  FF_NETWORK_PER_BUILD: 'true'
+  # Will be set to the same namespace as the source project for a MR,
+  # or the same namespace as the current project for the `main` branch.
+  # Can be overridden entirely from project settings.
+  ENTERPRISE_CANARY_PROJECT: ''
+  ENTERPRISE_PROJECT: $CI_PROJECT_NAMESPACE/controller-enterprise
+  ENTERPRISE_REF: main
+  COMMUNITY_EDITION_UPSTREAM: $CI_PROJECT_PATH
+
+trigger_enterprise_ci:
+  needs: []
+  stage: trigger
+  rules:
+    - if: $CI_COMMIT_BRANCH =~ /^main$/ || $CI_PIPELINE_SOURCE == 'merge_request_event'
+      exists:
+        - crates/community-modules/Cargo.toml
+  script:
+    - set -x
+    - shopt -s expand_aliases
+    - |
+      if [ "$ENTERPRISE_CANARY_PROJECT" == "" ]; then
+        if [[ $CI_MERGE_REQUEST_SOURCE_PROJECT_PATH != "" ]]; then
+          SOURCE_PROJECT_NAMESPACE="${CI_MERGE_REQUEST_SOURCE_PROJECT_PATH%\/*}"
+          export ENTERPRISE_CANARY_PROJECT="$SOURCE_PROJECT_NAMESPACE"/controller-enterprise-canary
+          export ENTERPRISE_PROJECT="$SOURCE_PROJECT_NAMESPACE"/controller-enterprise
+          export COMMUNITY_EDITION_UPSTREAM="$CI_MERGE_REQUEST_SOURCE_PROJECT_PATH"
+        else
+          export ENTERPRISE_CANARY_PROJECT="$CI_PROJECT_NAMESPACE"/controller-enterprise-canary
+          export ENTERPRISE_PROJECT="$CI_PROJECT_NAMESPACE"/controller-enterprise
+          export COMMUNITY_EDITION_UPSTREAM="$CI_PROJECT_PATH"
+        fi
+      fi
+    # https://stackoverflow.com/a/28055173
+    - alias encode_uri='perl -pe '\''s/([^a-zA-Z0-9_.!~*()'\''\'\'''\''-])/sprintf("%%%02X",ord($1))/ge'\'
+    - export ENCODED_ENTERPRISE_PROJECT="$(echo -n "$ENTERPRISE_PROJECT" | encode_uri)"
+    - |
+      curl \
+        --request POST \
+        --form "token=$CI_JOB_TOKEN" \
+        --form "ref=$ENTERPRISE_REF" \
+        --form "variables[CANARY_REPO_PROJECT_PATH]=$ENTERPRISE_CANARY_PROJECT" \
+        --form "variables[COMMUNITY_EDITION_COMMITISH]=$CI_COMMIT_SHA" \
+        --form "variables[COMMUNITY_EDITION_UPSTREAM]=$COMMUNITY_EDITION_UPSTREAM" \
+        "$CI_API_V4_URL/projects/$ENCODED_ENTERPRISE_PROJECT/trigger/pipeline"
+
+lint:fmt:
+  needs: []
+  rules:
+    # Run in merge requests (if there is one job with this instruction, all jobs without
+    # it are ignored for the MR pipeline)
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    # Run on scheduled pipeline runs
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+  stage: lint
+  script:
+    - cargo fmt -- --check
+
+lint:clippy:
+  needs: []
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+  stage: lint
+  script: cargo clippy --workspace --all-features --tests -- --deny warnings
+
+lint:doc:
+  needs: []
+  variables:
+    RUSTDOCFLAGS: -Dwarnings
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+  stage: lint
+  script: cargo doc --workspace --no-deps
+
+lint:dependency_check:
+  needs: []
+  image: git.opentalk.dev:5050/opentalk/backend/containers/cargo-deny:latest
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+      changes:
+        - Cargo.lock
+        - deny.toml
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+  stage: lint
+  script: cargo-deny --workspace check
+
+lint:unnecessary_dependencies:
+  needs: []
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+  stage: lint
+  before_script: if ! cargo machete --version; then cargo install cargo-machete; fi
+  script: cargo machete --with-metadata
+
+lint:yaml:
+  needs: []
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+  stage: lint
+  image: alpine:3.18
+  before_script:
+    - apk add --no-cache yamllint
+  script: yamllint .
+
+lint:openapi:
+  needs: []
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+  stage: lint
+  image:
+    name: redocly/openapi-cli
+    entrypoint: ['']
+  script:
+    - /usr/local/bin/openapi lint api/controller/frontend_api.yaml
+
+lint:markdown:
+  needs: []
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+  stage: lint
+  image: registry.gitlab.com/pipeline-components/markdownlint:latest
+  script:
+    - mdl --style .markdown_style.rb  --warnings .
+
+lint:licensing:
+  needs: []
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+  stage: lint
+  image:
+    name: fsfe/reuse:latest
+    entrypoint: ['']
+  script:
+    - reuse lint
+
+check:opentalk-types:
+  # Ensures that the `types` crate can be built with each relevant feature individually
+  variables:
+    RUSTFLAGS: -D warnings
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+  stage: check
+  needs: []
+  script:
+    - cargo check --package opentalk-types
+    - cargo check --package opentalk-types --no-default-features
+
+    - cargo check --package opentalk-types --features="frontend"
+    - cargo check --package opentalk-types --no-default-features --features="frontend"
+
+    - cargo check --package opentalk-types --features="backend"
+    - cargo check --package opentalk-types --no-default-features --features="backend"
+
+    - cargo check --package opentalk-types --features="actix"
+    - cargo check --package opentalk-types --no-default-features --features="actix"
+
+    - cargo check --package opentalk-types --features="diesel"
+    - cargo check --package opentalk-types --no-default-features --features="diesel"
+
+    - cargo check --package opentalk-types --features="kustos"
+    - cargo check --package opentalk-types --no-default-features --features="kustos"
+
+    - cargo check --package opentalk-types --features="redis"
+    - cargo check --package opentalk-types --no-default-features --features="redis"
+
+    - cargo check --package opentalk-types --features="rand"
+    - cargo check --package opentalk-types --no-default-features --features="rand"
+
+    - cargo check --package opentalk-types --features="serde"
+    - cargo check --package opentalk-types --no-default-features --features="serde"
+
+check:docs-generated-parts:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+  stage: check
+  variables:
+    # Set ENV vars for services
+    POSTGRES_DB: opentalk
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: password123
+    RABBITMQ_DEFAULT_USER: guest
+    RABBITMQ_DEFAULT_PASS: guest
+    RABBITMQ_HOST: rabbitmq
+    RABBITMQ_PORT: '5672'
+    OPENTALK_CTRL_RABBIT_MQ__URL: amqp://guest:guest@rabbitmq:5672
+  services:
+    - name: postgres:15-alpine
+      alias: postgres
+    - name: rabbitmq:3.8
+      alias: rabbitmq
+  needs: []
+  script:
+    - ci/docs-update-generated-parts.sh
+    - |
+      if ! git diff --exit-code; then
+        echo "Generated parts of documentation changed, run ci/docs-update-generated-parts.sh and commit the result"
+        exit 1
+      fi
+
+test:cargo_test:
+  needs: []
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+  stage: test
+  artifacts:
+    paths:
+      - target/coverage/html
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: target/coverage/cobertura.xml
+  coverage: '/Coverage: \d+(?:\.\d+)?/'
+  variables:
+    # Set ENV vars for services
+    POSTGRES_DB: opentalk
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: password123
+    POSTGRES_HOST_AUTH_METHOD: trust
+    RABBITMQ_DEFAULT_USER: guest
+    RABBITMQ_DEFAULT_PASS: guest
+    RABBITMQ_HOST: rabbitmq
+    RABBITMQ_PORT: '5672'
+    JANUS_EXCHANGE_TYPE: topic
+    # Used for integration tests
+    JANUS_HOST: ws://janus-gateway:8188
+    POSTGRES_BASE_URL: postgres://postgres:password123@postgres:5432
+    DATABASE_NAME: opentalk
+    KUSTOS_TESTS_DATABASE_URL: postgres://postgres:password123@postgres:5432/kustos
+    AMQP_ADDR: amqp://guest:guest@rabbitmq:5672
+    REDIS_ADDR: redis://redis:6379/
+    # Used for coverage
+    COVERAGE_XML_PATH: 'concat("Coverage: ", 100 * string(//coverage/@line-rate), "%")'
+  services:
+    - name: postgres:15-alpine
+      alias: postgres
+    - name: rabbitmq:3.8
+      alias: rabbitmq
+    - name: git.opentalk.dev:5050/opentalk/backend/containers/janus-gateway:v0.13.2
+      alias: janus-gateway
+    - name: redis:6-alpine
+      alias: redis
+  before_script:
+    - rustup component add rustfmt llvm-tools-preview
+    # libxml2-utils contains the xmllint command used below
+    - apt-get update && apt-get install -y libxml2-utils
+    - cargo install diesel_cli --version ~2 --no-default-features --features="postgres"
+  script:
+    - RUSTFLAGS="-C instrument-coverage -C link-arg=-fuse-ld=lld"
+      LLVM_PROFILE_FILE="$(pwd)/target/coverage/raw/coverage-%p-%m.profraw"
+      cargo test --workspace --locked
+
+    # Extract code coverage data
+    - grcov target/coverage/raw
+      --binary-path ./target/debug/
+      --source-dir .
+      --output-types cobertura,html
+      --branch
+      --ignore-not-existing
+      --ignore "*cargo*"
+      --output-path target/coverage
+
+    # Print out the coverage percentage for GitLab
+    - xmllint --xpath "$COVERAGE_XML_PATH" target/coverage/cobertura.xml
+
+    # Verify that the HEAD schema.rs matches the actual HEAD migration database schema.
+    - RUST_LOG=error cargo xtask verify-db-schema --postgres-url="${POSTGRES_BASE_URL}"
+
+test:container:
+  needs: []
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+  stage: test
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: ['']
+  script:
+    - mkdir -p /kaniko/.docker
+    - >
+      echo
+      "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"$(echo -n ${CI_REGISTRY_USER}:${CI_REGISTRY_PASSWORD} | base64)\"}}}" >
+      /kaniko/.docker/config.json
+    - >
+      /kaniko/executor
+      --registry-mirror=mirror.gcr.io
+      --context $CI_PROJECT_DIR
+      --dockerfile $CI_PROJECT_DIR/container/Dockerfile
+      --no-push
+      --force
+
+build:
+  needs: []
+  variables:
+    VERGEN_GIT_SHA: $CI_COMMIT_SHA
+    VERGEN_GIT_BRANCH: $CI_COMMIT_REF_NAME
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "pipeline"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG != null
+  stage: build
+  artifacts:
+    paths:
+      - target/release/opentalk-controller
+    expire_in: 1 week
+  before_script:
+    - apt-get update && apt-get install -y libpq-dev musl-tools protobuf-compiler
+  script:
+    - cargo auditable build --release --locked --workspace
+
+package:controller-container-dev:
+  needs:
+    - build
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "pipeline"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  stage: package
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: ['']
+  script:
+    - mkdir -p /kaniko/.docker
+    - >
+      echo
+      "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"$(echo -n ${CI_REGISTRY_USER}:${CI_REGISTRY_PASSWORD} | base64)\"}}}" >
+      /kaniko/.docker/config.json
+    - >
+      /kaniko/executor
+      --registry-mirror=mirror.gcr.io
+      --context $CI_PROJECT_DIR
+      --dockerfile $CI_PROJECT_DIR/ci/Dockerfile
+      --destination $CI_REGISTRY_IMAGE:dev
+      --force
+
+trigger-docs:
+  needs: []
+  stage: trigger
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "pipeline"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PROJECT_NAME !~ /^.*canary$/
+  trigger:
+    project: opentalk/backend/docs
+
+package:controller-container-tag:
+  needs:
+    - build
+  rules:
+    - if: $CI_COMMIT_TAG != null
+  stage: package
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: ['']
+  script:
+    - mkdir -p /kaniko/.docker
+    - >
+      echo
+      "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"$(echo -n ${CI_REGISTRY_USER}:${CI_REGISTRY_PASSWORD} | base64)\"}}}" >
+      /kaniko/.docker/config.json
+    - >
+      /kaniko/executor
+      --registry-mirror=mirror.gcr.io
+      --context $CI_PROJECT_DIR
+      --dockerfile $CI_PROJECT_DIR/ci/Dockerfile
+      --destination $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
+      --force
+
+package:read-latest-tag:
+  needs: []
+  rules:
+    - if: $CI_COMMIT_TAG != null
+  image:
+    name: alpine/git
+    entrypoint: ['']
+  stage: package
+  script:
+    - git fetch --tags
+    - LATEST_TAG=$(git tag --list | grep "^v[[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+$" | sort -V | tail -n1)
+    - echo "LATEST_TAG=$LATEST_TAG" >> package.env
+  artifacts:
+    reports:
+      dotenv: package.env
+
+package:controller-container-latest:
+  needs:
+    - build
+    - package:read-latest-tag
+  rules:
+    - if: $CI_COMMIT_TAG != null
+  stage: package
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: ['']
+  script:
+    - mkdir -p /kaniko/.docker
+    - >
+      echo
+      "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"$(echo -n ${CI_REGISTRY_USER}:${CI_REGISTRY_PASSWORD} | base64)\"}}}" >
+      /kaniko/.docker/config.json
+    - |
+      if [ "$CI_COMMIT_TAG" == "$LATEST_TAG" ]; then
+        /kaniko/executor \
+          --registry-mirror=mirror.gcr.io \
+          --context $CI_PROJECT_DIR \
+          --dockerfile $CI_PROJECT_DIR/ci/Dockerfile \
+          --destination $CI_REGISTRY_IMAGE:latest \
+          --force
+      fi

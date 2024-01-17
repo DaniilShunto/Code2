@@ -1,0 +1,32 @@
+{
+  "theme_color": "#d1e545",
+  "background_color": "#2196f3",
+  "display": "browser",
+  "scope": "/",
+  "start_url": "/",
+  "name": "OpenTalk - Au\u00dfen sch\u00f6n, innen sicher",
+  "short_name": "OpenTalk",
+  "description": "Sichere Video\u00adkonferenzen f\u00fcr alle, die Wert auf Skalierbarkeit, digitale Souver\u00e4nit\u00e4t und Datenschutz legen.",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-256x256.png",
+      "sizes": "256x256",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

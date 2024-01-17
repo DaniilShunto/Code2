@@ -1,0 +1,36 @@
+# SPDX-FileCopyrightText: OpenTalk GmbH <mail@opentalk.eu>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+[package]
+name = "opentalk-nextcloud-client"
+description = "NextCloud client library embedded in OpenTalk"
+edition = "2021"
+license = "EUPL-1.2"
+authors.workspace = true
+version.workspace = true
+publish = false
+
+[dependencies]
+chrono.workspace = true
+derive_more.workspace = true
+log.workspace = true
+reqwest = { workspace = true, features = ["json"] }
+reqwest_dav = { version = "0.1.8", default-features = false }
+serde.workspace = true
+strum.workspace = true
+thiserror.workspace = true
+url.workspace = true
+
+[dev-dependencies]
+anyhow.workspace = true
+clap = { workspace = true, features = ["derive", "env"] }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+
+[features]
+rustls-tls = ["reqwest/rustls-tls", "reqwest_dav/rustls-tls"]
+native-tls = ["reqwest/native-tls", "reqwest_dav/native-tls"]
+rustls-tls-native-roots = [
+  "reqwest/rustls-tls-native-roots",
+  "reqwest_dav/rustls-tls-native-roots",
+]

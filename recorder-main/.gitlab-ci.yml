@@ -1,0 +1,218 @@
+# SPDX-FileCopyrightText: OpenTalk GmbH <mail@opentalk.eu>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+---
+image: git.opentalk.dev:5050/opentalk/backend/containers/rust:alpine3.18
+
+stages:
+  - lint
+  - test
+  - build
+  - trigger
+
+variables:
+  CARGO_HOME: ${CI_PROJECT_DIR}/.cargo
+  # Enable one network per build for the test container and services
+  FF_NETWORK_PER_BUILD: 'true'
+
+lint:fmt:
+  rules:
+    # Run in merge requests (if there is one job with this instruction, all jobs without
+    # it are ignored for the MR pipeline)
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    # Run on scheduled pipeline runs
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+    # Run on feature branches
+    - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+  stage: lint
+  script:
+    - cargo fmt -- --check
+
+lint:clippy:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+    - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+  stage: lint
+  before_script:
+    - >
+      apk add --no-cache
+      musl-dev glib-dev openssl-dev
+      gstreamer-dev gst-plugins-base-dev gst-plugins-bad-dev
+  script:
+    # Use clippy::pedantic for the entire source code
+    # TODO: This it temporary and this rules will be added in the future
+    - >
+      cargo clippy --all-features
+      -- --deny warnings --deny clippy::pedantic
+      --allow clippy::cast-possible-truncation
+      --allow clippy::cast-possible-wrap
+      --allow clippy::cast-precision-loss
+      --allow clippy::cast-sign-loss
+    # Use clippy::all for tests
+    - >
+      cargo clippy --all-features --tests
+      -- --deny warnings --deny clippy::all
+
+lint:dependency_check_advisories:
+  image: git.opentalk.dev:5050/opentalk/backend/containers/cargo-deny:latest
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+    - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+  stage: lint
+  allow_failure: true
+  script: cargo deny check advisories
+
+lint:dependency_check_bans_licenses_sources:
+  image: git.opentalk.dev:5050/opentalk/backend/containers/cargo-deny:latest
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+    - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+  stage: lint
+  script: cargo deny check bans licenses sources
+
+lint:yaml:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+    - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+  stage: lint
+  image: alpine:3.18
+  before_script:
+    - apk add --no-cache yamllint
+  script: yamllint .
+
+lint:markdown:
+  needs: []
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+  stage: lint
+  image: registry.gitlab.com/pipeline-components/markdownlint:latest
+  script:
+    - mdl --style .markdown_style.rb  --warnings .
+
+lint:licensing:
+  needs: []
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+  stage: lint
+  image:
+    name: fsfe/reuse:latest
+    entrypoint: ['']
+  script:
+    - reuse lint
+
+test:cargo_test:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+    - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+  stage: test
+  artifacts:
+    paths:
+      - target/coverage/html
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: target/coverage/cobertura.xml
+  coverage: '/Coverage: \d+(?:\.\d+)?/'
+  variables:
+    COVERAGE_XML_PATH: 'concat("Coverage: ", 100 * string(//coverage/@line-rate), "%")'
+    RUSTFLAGS: -Ctarget-feature=-crt-static -Cinstrument-coverage -Clink-arg=-fuse-ld=lld
+    LLVM_PROFILE_FILE: ./target/coverage/raw/coverage-%p-%m.profraw
+  before_script:
+    - >
+      apk add --no-cache
+      libxml2-utils
+      musl-dev glib-dev openssl-dev
+      gstreamer-dev gst-plugins-base-dev gst-plugins-bad-dev
+      gst-plugins-base gst-plugins-good gst-plugins-bad gst-plugins-ugly libnice-gstreamer gst-libav ffmpeg
+    - apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/testing/ grcov
+    - rustup component add rustfmt llvm-tools-preview
+    - cargo install grcov
+  script:
+    # tests wetc_scenario1 is ignored until fixed
+    - >
+      cargo test
+      --workspace
+      --locked
+      --
+      --test-threads 1
+
+    # Extract code coverage data
+    - >
+      grcov target/coverage/raw
+      --binary-path ./target/debug/
+      --source-dir .
+      --output-types cobertura,html
+      --branch
+      --ignore-not-existing
+      --ignore "*cargo*"
+      --output-path target/coverage
+
+    # Print out the coverage percentage for GitLab
+    - xmllint --xpath "$COVERAGE_XML_PATH" target/coverage/cobertura.xml
+
+test:doc:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+    - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+  stage: test
+  before_script:
+    - >
+      apk add --no-cache
+      musl-dev glib-dev openssl-dev
+      gstreamer-dev gst-plugins-base-dev gst-plugins-bad-dev
+  script:
+    - cargo doc --workspace --verbose
+
+trigger-docs:
+  needs: []
+  stage: trigger
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "pipeline"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PROJECT_NAME !~ /^.*canary$/ || $CI_COMMIT_TAG =~ /^v.*$/
+  trigger:
+    project: opentalk/backend/docs
+
+build:container:
+  variables:
+    IMAGE_DESTIANTION_ARGS: --no-push
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      variables:
+        IMAGE_DESTIANTION_ARGS: --destination $CI_REGISTRY_IMAGE:dev
+    - if: $CI_COMMIT_TAG != null
+      variables:
+        IMAGE_DESTIANTION_ARGS: >
+          --destination $CI_REGISTRY_IMAGE:latest
+          --destination $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
+    - if: >
+        $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH &&
+        $CI_COMMIT_BRANCH != null
+      variables:
+        IMAGE_DESTIANTION_ARGS: --destination $CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH
+  stage: build
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: ['']
+  script:
+    - mkdir -p /kaniko/.docker
+    - >
+      echo
+      "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"$(echo -n ${CI_REGISTRY_USER}:${CI_REGISTRY_PASSWORD} | base64)\"}}}" >
+      /kaniko/.docker/config.json
+    - >
+      /kaniko/executor
+      --registry-mirror=mirror.gcr.io
+      --context $CI_PROJECT_DIR
+      --dockerfile $CI_PROJECT_DIR/ci/Dockerfile
+      $IMAGE_DESTIANTION_ARGS
+      --force

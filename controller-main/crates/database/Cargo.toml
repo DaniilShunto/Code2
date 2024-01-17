@@ -1,0 +1,39 @@
+# SPDX-FileCopyrightText: OpenTalk GmbH <mail@opentalk.eu>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+[package]
+name = "opentalk-database"
+edition = "2021"
+license = "EUPL-1.2"
+authors.workspace = true
+version.workspace = true
+publish = false
+
+[dependencies]
+controller-settings = { path = "../controller-settings", package = "opentalk-controller-settings" }
+
+### ORM and Database connector
+diesel = { workspace = true, features = [
+    "uuid",
+    "serde_json",
+    "chrono",
+    "i-implement-a-third-party-backend-and-opt-into-breaking-changes",
+] }
+diesel-async = { workspace = true, features = ["postgres", "deadpool"] }
+deadpool-runtime = { version = "0.1", features = ["tokio_1"] }
+
+async-trait = "0.1"
+futures-core = "0.3"
+
+
+### Error handling
+thiserror.workspace = true
+
+### Logging utilities
+log = { workspace = true, features = ["serde"] }
+tracing.workspace = true
+pin-project-lite = "0.2"
+
+### Opentelementry metrics
+opentelemetry.workspace = true

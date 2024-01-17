@@ -1,0 +1,33 @@
+# SPDX-FileCopyrightText: OpenTalk GmbH <mail@opentalk.eu>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+[package]
+name = "redis-args-impl"
+edition = "2021"
+license = "EUPL-1.2"
+authors.workspace = true
+version.workspace = true
+publish = true
+description = "Derive macro for reading and writing types for redis usage, either through serde or format args - proc-macro implementation"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro-fields-helper = { path = "../proc-macro-fields-helper", package = "opentalk-proc-macro-fields-helper" }
+proc-macro2 = "1"
+quote = "1"
+syn = { version = "2", features = ["extra-traits"] }
+
+[dev-dependencies]
+redis.workspace = true
+redis-args = { path = "../redis-args" }
+serde.workspace = true
+serde_json.workspace = true
+
+[package.metadata.cargo-machete]
+ignored = [
+  # is used in doctests
+  "serde",
+]

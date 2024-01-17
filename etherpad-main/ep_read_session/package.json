@@ -1,0 +1,8 @@
+{
+    "name": "ep_read_session",
+    "version": "0.0.1",
+    "description": "Allows creation of readonly sessions",
+    "engines": {
+        "node": ">= 10.13.0"
+    }
+}

@@ -1,0 +1,216 @@
+# SPDX-FileCopyrightText: OpenTalk GmbH <mail@opentalk.eu>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+---
+image: git.opentalk.dev:5050/opentalk/backend/containers/rust:1.71.0-alpine3.18
+
+stages:
+  - lint
+  - test
+  - package
+  - trigger
+
+variables:
+  CARGO_HOME: ${CI_PROJECT_DIR}/.cargo
+  # Enable one network per build for the test container and services
+  FF_NETWORK_PER_BUILD: 'true'
+
+lint:fmt:
+  rules:
+    # Run in merge requests (if there is one job with this instruction, all jobs without
+    # it are ignored for the MR pipeline)
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    # Run on scheduled pipeline runs
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+    # Run on feature branches
+    - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+  stage: lint
+  script:
+    - cargo fmt -- --check
+
+lint:clippy:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+    - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+  stage: lint
+  before_script:
+    - >
+      apk add --no-cache
+      musl-dev glib-dev openssl-dev
+      gstreamer-dev gst-plugins-base-dev gst-plugins-bad-dev
+  script:
+    - cargo clippy --all-features --tests -- --deny warnings
+
+lint:dependency_check_advisories:
+  image: git.opentalk.dev:5050/opentalk/backend/containers/cargo-deny:latest
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+    - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+  stage: lint
+  allow_failure: true
+  script: cargo deny check advisories
+
+lint:dependency_check_bans_licenses_sources:
+  image: git.opentalk.dev:5050/opentalk/backend/containers/cargo-deny:latest
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+    - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+  stage: lint
+  script: cargo deny check bans licenses sources
+
+lint:yaml:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+    - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+  stage: lint
+  image: alpine:3.18
+  before_script:
+    - apk add --no-cache yamllint
+  script: yamllint .
+
+lint:licensing:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+  stage: lint
+  image:
+    name: fsfe/reuse:latest
+    entrypoint: ['']
+  script:
+    - reuse lint
+
+test:cargo_test:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+    - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+  stage: test
+  needs: []
+  before_script:
+    - >
+      apk add --no-cache
+      musl-dev glib-dev openssl-dev
+      gstreamer-dev gst-plugins-base-dev gst-plugins-bad-dev
+  script:
+    - cargo test --workspace --locked
+
+test:container:
+  rules:
+    # Run only on MR, cause we have no access to the registry in other repos
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+  stage: test
+  needs: []
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: ['']
+  script:
+    - mkdir -p /kaniko/.docker
+    - >
+      echo
+      "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"$(echo -n ${CI_REGISTRY_USER}:${CI_REGISTRY_PASSWORD} | base64)\"}}}" >
+      /kaniko/.docker/config.json
+    - >
+      /kaniko/executor
+      --registry-mirror=mirror.gcr.io
+      --context $CI_PROJECT_DIR
+      --dockerfile $CI_PROJECT_DIR/ci/Dockerfile
+      --cache-repo $CI_REGISTRY_IMAGE/cache
+      --no-push
+      --force
+
+package:obelisk-container-dev:
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  stage: package
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: ['']
+  script:
+    - mkdir -p /kaniko/.docker
+    - >
+      echo
+      "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"$(echo -n ${CI_REGISTRY_USER}:${CI_REGISTRY_PASSWORD} | base64)\"}}}" >
+      /kaniko/.docker/config.json
+    - >
+      /kaniko/executor
+      --registry-mirror=mirror.gcr.io
+      --context $CI_PROJECT_DIR
+      --dockerfile $CI_PROJECT_DIR/ci/Dockerfile
+      --destination $CI_REGISTRY_IMAGE:dev
+      --force
+
+trigger-docs:
+  needs: []
+  stage: trigger
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "pipeline"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PROJECT_NAME !~ /^.*canary$/ || $CI_COMMIT_TAG =~ /^v.*$/
+  trigger:
+    project: opentalk/backend/docs
+
+package:obelisk-container-tag:
+  rules:
+    - if: $CI_COMMIT_TAG != null
+  stage: package
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: ['']
+  script:
+    - mkdir -p /kaniko/.docker
+    - >
+      echo
+      "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"$(echo -n ${CI_REGISTRY_USER}:${CI_REGISTRY_PASSWORD} | base64)\"}}}" >
+      /kaniko/.docker/config.json
+    - >
+      /kaniko/executor
+      --registry-mirror=mirror.gcr.io
+      --context $CI_PROJECT_DIR
+      --dockerfile $CI_PROJECT_DIR/ci/Dockerfile
+      --destination $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
+      --force
+
+package:read-latest-tag:
+  rules:
+    - if: $CI_COMMIT_TAG != null
+  image:
+    name: alpine/git
+    entrypoint: ['']
+  stage: package
+  script:
+    - git fetch --tags
+    - LATEST_TAG=$(git tag --list | grep "^v[[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+$" | sort -V | tail -n1)
+    - echo "LATEST_TAG=$LATEST_TAG" >> package.env
+  artifacts:
+    reports:
+      dotenv: package.env
+
+package:obelisk-container-latest:
+  rules:
+    - if: $CI_COMMIT_TAG != null
+  stage: package
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: ['']
+  needs:
+    - package:read-latest-tag
+  script:
+    - mkdir -p /kaniko/.docker
+    - >
+      echo
+      "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"$(echo -n ${CI_REGISTRY_USER}:${CI_REGISTRY_PASSWORD} | base64)\"}}}" >
+      /kaniko/.docker/config.json
+    - |
+      if [ "$CI_COMMIT_TAG" == "$LATEST_TAG" ]; then
+        /kaniko/executor \
+          --registry-mirror=mirror.gcr.io \
+          --context $CI_PROJECT_DIR \
+          --dockerfile $CI_PROJECT_DIR/ci/Dockerfile \
+          --destination $CI_REGISTRY_IMAGE:latest \
+          --force
+      fi

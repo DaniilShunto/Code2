@@ -1,0 +1,9 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Source: https://git.opentalk.dev/opentalk/ot-janus-gateway
+Upstream-Name: OpenTalk Janus Gateway
+Upstream-Contact: OpenTalk GmbH <mail@opentalk.eu>
+
+Files:
+ README.md
+Copyright: OpenTalk GmbH <mail@opentalk.eu>
+License: EUPL-1.2

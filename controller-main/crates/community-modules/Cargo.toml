@@ -1,0 +1,29 @@
+# SPDX-FileCopyrightText: OpenTalk GmbH <mail@opentalk.eu>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+[package]
+name = "opentalk-community-modules"
+edition = "2021"
+license = "EUPL-1.2"
+authors.workspace = true
+version.workspace = true
+publish = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+signaling-core = { path = "../signaling-core", package = "opentalk-signaling-core" }
+
+janus-media = { path = "../janus-media", package = "opentalk-janus-media" }
+chat = { path = "../chat", package = "opentalk-chat" }
+opentalk_core = { path = "../core", package = "opentalk-core" }
+integration = { path = "../integration", package = "opentalk-integration" }
+polls = { path = "../polls", package = "opentalk-polls" }
+protocol = { path = "../protocol", package = "opentalk-protocol" }
+shared_folder = { path = "../shared-folder", package = "opentalk-shared-folder" }
+timer = { path = "../timer", package = "opentalk-timer" }
+whiteboard = { path = "../whiteboard", package = "opentalk-whiteboard" }
+
+anyhow.workspace = true
+async-trait.workspace = true

@@ -1,0 +1,8 @@
+# SPDX-FileCopyrightText: OpenTalk GmbH <mail@opentalk.eu>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+[submodule "cargo-deny"]
+	path = cargo-deny
+	url = ../../3rdParty/cargo-deny-mirror
+	branch = main

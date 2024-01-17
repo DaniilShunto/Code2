@@ -1,0 +1,32 @@
+# SPDX-FileCopyrightText: OpenTalk GmbH <mail@opentalk.eu>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+---
+image:
+  name: gcr.io/kaniko-project/executor:debug
+  entrypoint: ['']
+
+include: '**/.gitlab-ci.yml'
+
+stages:
+  - lint
+  - build
+
+variables:
+  CARGO_HOME: ${CI_PROJECT_DIR}/.cargo
+  RUST_MAJOR: 1
+  RUST_MINOR: 73
+  RUST_PATCH: 0
+  RUST_VERSION: $RUST_MAJOR.$RUST_MINOR.$RUST_PATCH
+
+lint:licensing:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+  stage: lint
+  image:
+    name: fsfe/reuse:latest
+    entrypoint: ['']
+  script:
+    - reuse lint

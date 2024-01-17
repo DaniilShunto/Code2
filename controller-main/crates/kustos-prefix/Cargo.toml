@@ -1,0 +1,16 @@
+# SPDX-FileCopyrightText: OpenTalk GmbH <mail@opentalk.eu>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+[package]
+name = "opentalk-kustos-prefix"
+edition = "2021"
+license = "EUPL-1.2"
+authors.workspace = true
+version.workspace = true
+publish = true
+description = "Derive macro for defining kustos prefix"
+
+[dependencies]
+kustos-prefix-impl = { path = "../kustos-prefix-impl", package = "opentalk-kustos-prefix-impl" }
+kustos-shared = { path = "../kustos-shared", package = "kustos-shared" }

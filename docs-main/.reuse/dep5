@@ -1,0 +1,48 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Source: https://git.opentalk.dev/opentalk/smtp-mailer
+Upstream-Name: OpenTalk backend docs
+Upstream-Contact: OpenTalk GmbH <mail@opentalk.eu>
+
+Files:
+ yarn.lock
+ .yarnrc.yml
+ README.md
+ package.json
+ ci/clone-*
+ ci/**.sh
+ admin-docs/**.mdx
+ developer-docs/**.mdx
+Copyright: OpenTalk GmbH <mail@opentalk.eu>
+License: EUPL-1.2
+
+Files:
+ static/img/favicon.ico
+ static/img/logo.svg
+Copyright: OpenTalk GmbH <mail@opentalk.eu>
+License: CC-BY-NC-ND-4.0
+
+Files:
+ babel.config.js
+ docusaurus.config.js
+ sidebars.js
+ tsconfig.json
+ src/theme/NavbarItem/DocsVersionDropdownNavbarItem.js
+ src/theme/NavbarItem/LocaleDropdownNavbarItem/index.js
+ src/css/custom.css
+ src/pages/index.tsx
+ src/pages/index.module.css
+ src/pages/markdown-page.md
+Copyright:
+ Facebook, Inc. and its affiliates
+ OpenTalk GmbH <mail@opentalk.eu>
+License: MIT
+Source: https://github.com/facebook/docusaurus/tree/main/examples/classic-typescript
+
+Files:
+ .yarn/releases/yarn-3.3.1.cjs
+Copyright:
+ 2015, Rebecca Turner
+ Node.js contributors
+ 2014-present Jon Schlinkert
+License: MIT
+Source: https://repo.yarnpkg.com/3.3.1/packages/yarnpkg-cli/bin/yarn.js

@@ -1,0 +1,167 @@
+# SPDX-FileCopyrightText: OpenTalk GmbH <mail@opentalk.eu>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+image: git.opentalk.dev:5050/opentalk/backend/containers/rust:1.73.0-bullseye
+
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+
+stages:
+  - lint
+  - test
+  - build
+  - package
+  - trigger
+
+lint:fmt:
+  rules:
+    # Run in merge requests (if there is one job with this instruction, all jobs without
+    # it are ignored for the MR pipeline)
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    # Run on scheduled pipeline runs
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+  stage: lint
+  script:
+    - cargo fmt -- --check
+
+lint:clippy:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+  stage: lint
+  script: cargo clippy --workspace --all-features --tests -- --deny warnings
+
+lint:doc:
+  variables:
+    RUSTDOCFLAGS: -Dwarnings
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+  stage: lint
+  script: cargo doc --workspace --no-deps
+
+lint:dependency_check:
+  image: git.opentalk.dev:5050/opentalk/backend/containers/cargo-deny:latest
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+  stage: lint
+  script: cargo-deny check
+
+lint:licensing:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+  stage: lint
+  image:
+    name: fsfe/reuse:latest
+    entrypoint: ['']
+  script:
+    - reuse lint
+
+test:cargo_test:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+  stage: test
+  before_script:
+    - rustup component add rustfmt
+  script:
+    - cargo test --workspace --locked
+
+package:mailer-container-dev:
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  stage: package
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: ['']
+  script:
+    - mkdir -p /kaniko/.docker
+    - >
+      echo
+      "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"$(echo -n ${CI_REGISTRY_USER}:${CI_REGISTRY_PASSWORD} | base64)\"}}}" >
+      /kaniko/.docker/config.json
+    - >
+      /kaniko/executor
+      --registry-mirror=mirror.gcr.io
+      --context $CI_PROJECT_DIR
+      --build-arg=GIT_SHA=$CI_COMMIT_SHA
+      --build-arg=GIT_REF=$CI_COMMIT_REF_NAME
+      --dockerfile $CI_PROJECT_DIR/container/Dockerfile
+      --destination $CI_REGISTRY_IMAGE:dev
+      --force
+
+trigger-docs:
+  needs: []
+  stage: trigger
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "pipeline"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PROJECT_NAME !~ /^.*canary$/ || $CI_COMMIT_TAG =~ /^v.*$/
+  trigger:
+    project: opentalk/backend/docs
+
+package:mailer-container-tag:
+  rules:
+    - if: $CI_COMMIT_TAG != null
+  stage: package
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: ['']
+  script:
+    - mkdir -p /kaniko/.docker
+    - >
+      echo
+      "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"$(echo -n ${CI_REGISTRY_USER}:${CI_REGISTRY_PASSWORD} | base64)\"}}}" >
+      /kaniko/.docker/config.json
+    - >
+      /kaniko/executor
+      --registry-mirror=mirror.gcr.io
+      --context $CI_PROJECT_DIR
+      --build-arg=GIT_SHA=$CI_COMMIT_SHA
+      --build-arg=GIT_REF=$CI_COMMIT_REF_NAME
+      --dockerfile $CI_PROJECT_DIR/container/Dockerfile
+      --destination $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
+      --force
+
+package:read-latest-tag:
+  rules:
+    - if: $CI_COMMIT_TAG != null
+  image:
+    name: alpine/git
+    entrypoint: ['']
+  stage: package
+  script:
+    - git fetch --tags
+    - LATEST_TAG=$(git tag --list | grep "^v[[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+$" | sort -V | tail -n1)
+    - echo "LATEST_TAG=$LATEST_TAG" >> package.env
+  artifacts:
+    reports:
+      dotenv: package.env
+
+package:mailer-container-latest:
+  rules:
+    - if: $CI_COMMIT_TAG != null
+  stage: package
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: ['']
+  needs:
+    - package:read-latest-tag
+  script:
+    - mkdir -p /kaniko/.docker
+    - >
+      echo
+      "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"$(echo -n ${CI_REGISTRY_USER}:${CI_REGISTRY_PASSWORD} | base64)\"}}}" >
+      /kaniko/.docker/config.json
+    - |
+      if [ "$CI_COMMIT_TAG" == "$LATEST_TAG" ]; then
+        /kaniko/executor \
+          --registry-mirror=mirror.gcr.io \
+          --context $CI_PROJECT_DIR \
+          --dockerfile $CI_PROJECT_DIR/container/Dockerfile \
+          --destination $CI_REGISTRY_IMAGE:latest \
+          --force
+      fi

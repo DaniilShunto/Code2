@@ -1,0 +1,30 @@
+# SPDX-FileCopyrightText: OpenTalk GmbH <mail@opentalk.eu>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+[package]
+name = "opentalk-polls"
+edition = "2021"
+license = "EUPL-1.2"
+authors.workspace = true
+version.workspace = true
+publish = false
+
+[dependencies]
+anyhow.workspace = true
+async-trait.workspace = true
+futures.workspace = true
+log.workspace = true
+redis.workspace = true
+redis-args = { path = "../redis-args" }
+serde.workspace = true
+signaling-core = { path = "../signaling-core", package = "opentalk-signaling-core" }
+tokio.workspace = true
+tracing.workspace = true
+types = { path = "../types", package = "opentalk-types", features = ["backend"] }
+
+[dev-dependencies]
+test-util = { path = "../test-util", package = "opentalk-test-util", features = ["controller"] }
+pretty_assertions.workspace = true
+serial_test.workspace = true
+actix-rt.workspace = true

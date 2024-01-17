@@ -1,0 +1,27 @@
+# SPDX-FileCopyrightText: OpenTalk GmbH <mail@opentalk.eu>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+---
+version: '3.3'
+services:
+    janus-gateway:
+        image: janus-gateway:latest
+        command:
+            - janus
+        network_mode: host
+        environment:
+            # How long to try to connect to rabbitmq before giving up
+            - WAITTIMEOUT=30
+            - RABBITMQ_HOST=localhost
+            - JANUS_EXCHANGE=janus-exchange
+            - JANUS_QUEUE_NAME=janus-gateway
+            - JANUS_EXCHANGE_TYPE=topic
+            - JANUS_QUEUE_INCOMING=to-janus
+            - JANUS_ROUTING_KEY_OUTGOING=from-janus
+            # Network interface to probe for ICE candidates
+            - JANUS_ICE_IF=eth0
+            - JANUS_ICE_LITE=true
+            - JANUS_UDP_PORT_RANGE='20000-40000'
+            - JANUS_IGNORE_MDNS=true
+        restart: always

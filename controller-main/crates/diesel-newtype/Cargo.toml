@@ -1,0 +1,17 @@
+# SPDX-FileCopyrightText: OpenTalk GmbH <mail@opentalk.eu>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+[package]
+name = "opentalk-diesel-newtype"
+edition = "2021"
+license = "EUPL-1.2"
+authors.workspace = true
+version.workspace = true
+publish = true
+description = "Newtype derive for diesel types used in OpenTalk crates"
+
+[dependencies]
+diesel-newtype-impl = { path = "../diesel-newtype-impl", package = "opentalk-diesel-newtype-impl" }
+diesel = { workspace = true, features = ["postgres"] }
+serde = { workspace = true, features = ["derive"] }

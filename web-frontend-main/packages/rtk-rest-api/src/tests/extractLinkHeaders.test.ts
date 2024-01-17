@@ -1,0 +1,181 @@
+// SPDX-FileCopyrightText: OpenTalk GmbH <mail@opentalk.eu>
+//
+// SPDX-License-Identifier: EUPL-1.2
+import { parseLink } from '../utils/extractLinkHeaders';
+
+describe('modernized parse-link-header', () => {
+  describe('parse-link-header cases', () => {
+    it('parsing a proper link header with next and last', () => {
+      const link =
+        '<https://api.github.com/user/9287/repos?client_id=1&client_secret=2&page=2&per_page=100>; rel="next", ' +
+        '<https://api.github.com/user/9287/repos?client_id=1&client_secret=2&page=3&per_page=100>; rel="last"';
+
+      expect(parseLink(link)).toEqual({
+        next: {
+          client_id: '1',
+          client_secret: '2',
+          page: '2',
+          per_page: '100',
+          rel: 'next',
+          url: 'https://api.github.com/user/9287/repos?client_id=1&client_secret=2&page=2&per_page=100',
+        },
+        last: {
+          client_id: '1',
+          client_secret: '2',
+          page: '3',
+          per_page: '100',
+          rel: 'last',
+          url: 'https://api.github.com/user/9287/repos?client_id=1&client_secret=2&page=3&per_page=100',
+        },
+      });
+    });
+
+    it('handles unquoted relationships', () => {
+      const link =
+        '<https://api.github.com/user/9287/repos?client_id=1&client_secret=2&page=2&per_page=100>; rel=next, ' +
+        '<https://api.github.com/user/9287/repos?client_id=1&client_secret=2&page=3&per_page=100>; rel=last';
+
+      expect(parseLink(link)).toEqual({
+        next: {
+          client_id: '1',
+          client_secret: '2',
+          page: '2',
+          per_page: '100',
+          rel: 'next',
+          url: 'https://api.github.com/user/9287/repos?client_id=1&client_secret=2&page=2&per_page=100',
+        },
+        last: {
+          client_id: '1',
+          client_secret: '2',
+          page: '3',
+          per_page: '100',
+          rel: 'last',
+          url: 'https://api.github.com/user/9287/repos?client_id=1&client_secret=2&page=3&per_page=100',
+        },
+      });
+    });
+
+    it('parsing a proper link header with next, prev and last', () => {
+      const linkHeader =
+        '<https://api.github.com/user/9287/repos?page=3&per_page=100>; rel="next", ' +
+        '<https://api.github.com/user/9287/repos?page=1&per_page=100>; rel="prev", ' +
+        '<https://api.github.com/user/9287/repos?page=5&per_page=100>; rel="last"';
+
+      expect(parseLink(linkHeader)).toEqual({
+        next: {
+          page: '3',
+          per_page: '100',
+          rel: 'next',
+          url: 'https://api.github.com/user/9287/repos?page=3&per_page=100',
+        },
+        prev: {
+          page: '1',
+          per_page: '100',
+          rel: 'prev',
+          url: 'https://api.github.com/user/9287/repos?page=1&per_page=100',
+        },
+        last: {
+          page: '5',
+          per_page: '100',
+          rel: 'last',
+          url: 'https://api.github.com/user/9287/repos?page=5&per_page=100',
+        },
+      });
+    });
+
+    it('parsing an empty link header', () => {
+      const linkHeader = '';
+
+      expect(parseLink(linkHeader)).toBeNull();
+    });
+
+    it('parsing a proper link header with next and a link without rel', () => {
+      const linkHeader =
+        '<https://api.github.com/user/9287/repos?page=3&per_page=100>; rel="next", ' +
+        '<https://api.github.com/user/9287/repos?page=1&per_page=100>; pet="cat", ';
+
+      expect(parseLink(linkHeader)).toEqual({
+        next: {
+          page: '3',
+          per_page: '100',
+          rel: 'next',
+          url: 'https://api.github.com/user/9287/repos?page=3&per_page=100',
+        },
+      });
+    });
+
+    it('parsing a proper link header with next and properties besides rel', () => {
+      const linkHeader =
+        '<https://api.github.com/user/9287/repos?page=3&per_page=100>; rel="next"; hello="world"; pet="cat"';
+
+      expect(parseLink(linkHeader)).toEqual({
+        next: {
+          page: '3',
+          per_page: '100',
+          rel: 'next',
+          hello: 'world',
+          pet: 'cat',
+          url: 'https://api.github.com/user/9287/repos?page=3&per_page=100',
+        },
+      });
+    });
+
+    it('parsing a proper link header with a comma in the url', () => {
+      const linkHeader = '<https://imaginary.url.notreal/?name=What,+me+worry>; rel="next";';
+
+      expect(parseLink(linkHeader)).toEqual({
+        next: { rel: 'next', name: 'What, me worry', url: 'https://imaginary.url.notreal/?name=What,+me+worry' },
+      });
+    });
+
+    it('parsing a proper link header with a multi-word rel', () => {
+      const linkHeader = '<https://imaginary.url.notreal/?name=What,+me+worry>; rel="next page";';
+
+      expect(parseLink(linkHeader)).toEqual({
+        page: { rel: 'page', name: 'What, me worry', url: 'https://imaginary.url.notreal/?name=What,+me+worry' },
+        next: { rel: 'next', name: 'What, me worry', url: 'https://imaginary.url.notreal/?name=What,+me+worry' },
+      });
+    });
+
+    it('parsing a proper link header with matrix parameters', () => {
+      const linkHeader = '<https://imaginary.url.notreal/segment;foo=bar;baz/item?name=What,+me+worry>; rel="next";';
+
+      expect(parseLink(linkHeader)).toEqual({
+        next: {
+          rel: 'next',
+          name: 'What, me worry',
+          url: 'https://imaginary.url.notreal/segment;foo=bar;baz/item?name=What,+me+worry',
+        },
+      });
+    });
+  });
+  describe('RFC 8288 - 3.5 Link Header Field Examples', () => {
+    // Indicates that "chapter2" is previous to this resource in a logical navigation path.
+    it('Example 1: Previous Chapter', () => {
+      const link = parseLink(`<http://example.com/TheBook/chapter2>; rel="previous"; title="previous chapter"`);
+
+      const refs = {
+        previous: {
+          url: 'http://example.com/TheBook/chapter2',
+          rel: 'previous',
+          title: 'previous chapter',
+        },
+      };
+
+      expect(link).toEqual(refs);
+    });
+
+    it('Example 3: Anchors', () => {
+      const link = parseLink(`</terms>; rel="copyright"; anchor="#foo"`);
+      const refs = {
+        copyright: {
+          anchor: '#foo',
+          rel: 'copyright',
+          url: '/terms',
+        },
+      };
+
+      expect(link).toEqual(refs);
+    });
+  });
+});

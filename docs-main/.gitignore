@@ -1,0 +1,39 @@
+# SPDX-FileCopyrightText: OpenTalk GmbH <mail@opentalk.eu>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+/node_modules
+/build
+
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# Swap the comments on the following lines if you don't wish to use zero-installs
+# Documentation here: https://yarnpkg.com/features/zero-installs
+#!.yarn/cache
+.pnp.*
+
+.tmp/
+docs/
+api/
+
+.docusaurus
+.editorconfig
+.vscode
+.idea
+
+build/
+
+/admin-docs/controller
+/admin-docs/obelisk
+/admin-docs/recorder
+/admin-docs/smtp-mailer
+/developer-docs/controller/signaling/community/*.md
+/developer-docs/controller/signaling/enterprise/*.md
+/i18n
+/openapi
+/user-docs

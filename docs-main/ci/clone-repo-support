@@ -1,0 +1,23 @@
+#!/bin/bash
+
+set -xe
+
+SCRIPT_DIR=$(dirname "$0")
+# shellcheck source=ci/include/clone.sh
+. "$SCRIPT_DIR"/include/clone.sh
+REPO_NAME=${REPO_NAME_SUPPORT:-opentalk/support}
+REPO_BRANCH=${REPO_BRANCH_SUPPORT:-main}
+
+clone_repo "$REPO_NAME" "$REPO_BRANCH"
+
+mkdir -p \
+  user-docs \
+  i18n/de/docusaurus-plugin-content-docs-user/current/
+
+deploy_to \
+  i18n/de/docusaurus-plugin-content-docs-user/current/ \
+  ".tmp/$REPO_NAME/docs/docusaurus/user/*"
+
+deploy_to \
+  user-docs/ \
+  ".tmp/$REPO_NAME/docs/docusaurus/i18n/en/docusaurus-plugin-content-docs/current/*"

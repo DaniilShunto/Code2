@@ -1,0 +1,27 @@
+# SPDX-FileCopyrightText: OpenTalk GmbH <mail@opentalk.eu>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+[package]
+name = "opentalk-protocol"
+edition = "2021"
+license = "EUPL-1.2"
+authors.workspace = true
+version.workspace = true
+publish = false
+
+[dependencies]
+anyhow.workspace = true
+async-trait.workspace = true
+chrono.workspace = true
+controller-settings = { path = "../controller-settings", package = "opentalk-controller-settings" }
+database = { path = "../database", package = "opentalk-database" }
+etherpad-client = { path = "../etherpad-client", package = "etherpad-client" }
+futures.workspace = true
+log.workspace = true
+redis-args = { path = "../redis-args" }
+redis.workspace = true
+serde.workspace = true
+signaling-core = { path = "../signaling-core", package = "opentalk-signaling-core" }
+tracing.workspace = true
+types = { path = "../types", package = "opentalk-types", features = ["backend"] }

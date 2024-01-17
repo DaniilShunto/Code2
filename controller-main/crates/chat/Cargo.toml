@@ -1,0 +1,34 @@
+# SPDX-FileCopyrightText: OpenTalk GmbH <mail@opentalk.eu>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+[package]
+name = "opentalk-chat"
+edition = "2021"
+license = "EUPL-1.2"
+authors.workspace = true
+version.workspace = true
+publish = false
+
+[dependencies]
+anyhow.workspace = true
+async-trait.workspace = true
+chrono.workspace = true
+db-storage = { path = "../db-storage", package = "opentalk-db-storage" }
+database = { path = "../database", package = "opentalk-database" }
+log.workspace = true
+r3dlock = { path = "../r3dlock" }
+serde_json.workspace = true
+redis.workspace = true
+redis-args = { path = "../redis-args" }
+signaling-core = { path = "../signaling-core", package = "opentalk-signaling-core" }
+tokio.workspace = true
+tracing.workspace = true
+types = { path = "../types", package = "opentalk-types", features = ["backend"] }
+uuid.workspace = true
+
+[dev-dependencies]
+pretty_assertions.workspace = true
+serial_test.workspace = true
+test-util = { path = "../test-util", package = "opentalk-test-util", features = ["controller"]}
+actix-rt.workspace = true

@@ -1,0 +1,39 @@
+{
+  "team_name": "SD_TEAM_NAME",
+  "contact_email": "SD_CONTACT_EMAIL",
+
+  "host": "SD_HOST",
+  "port": "SD_PORT",
+  "endpoint": "SD_ENDPOINT",
+  "invite_code": "SD_INVITE_CODE",
+
+  "storage_dialect": "SD_STORAGE_DIALECT",
+
+  "storage_host": "SD_STORAGE_HOST",
+  "storage_database": "SD_STORAGE_DATABASE",
+  "storage_username": "SD_STORAGE_USERNAME",
+  "storage_password": "SD_STORAGE_PASSWORD",
+
+  "storage_local_path": "SD_STORAGE_LOCAL_PATH",
+  "storage_local_db": "SD_STORAGE_LOCAL_DB",
+  "storage_region": "SD_STORAGE_REGION",
+  "storage_endpoint": "SD_STORAGE_ENDPOINT",
+  "storage_bucket": "SD_STORAGE_BUCKET",
+  "storage_cdn": "SD_STORAGE_CDN",
+
+  "mongodb_host": "SD_MONGODB_HOST",
+  "redis_mock": "SD_REDIS_MOCK",
+  "redis_host": "SD_REDIS_HOST",
+
+  "export_api_secret": "SD_EXPORT_API_SECRET",
+  "api_token": "SD_API_TOKEN",
+
+  "mail_provider": "SD_MAIL_PROVIDE",
+  "mail_smtp_host": "SD_MAIL_SMTP_HOST",
+  "mail_smtp_port": "SD_MAIL_SMTP_PORT",
+  "mail_smtp_secure": "SD_MAIL_SMTP_SECURE",
+  "mail_smtp_require_tls": "SD_MAIL_SMTP_REQUIRE_TLS",
+  "mail_smtp_user": "SD_MAIL_SMTP_USER",
+  "mail_smtp_pass": "SD_MAIL_SMTP_PASS",
+  "spacedeck": {}
+}

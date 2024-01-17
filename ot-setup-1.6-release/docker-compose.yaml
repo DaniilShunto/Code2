@@ -1,0 +1,269 @@
+---
+version: "3.9"
+services:
+  # *** Web-Frontend
+  web-frontend:
+    image: ${OT_FRONTEND_IMAGE_SRC:-registry.opencode.de/opentalk/web-frontend}:${OT_FRONTEND_IMAGE_TAG:-v1.7.2}
+    profiles: ["core", "web-frontend"]
+    restart: always
+    ports:
+      - ${OT_FRONTEND_EXP_PORT:-8080}:80
+    environment:
+      CONTROLLER_HOST: controller.${OT_DOMAIN}
+      BASE_URL: https://${OT_DOMAIN}
+      OIDC_ISSUER: https://accounts.${OT_DOMAIN}/auth/realms/${KC_REALM_ID:-opentalk}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-OtFrontend}
+      NDT_SERVER: ${NDT_SERVER:-ndt.example.com}
+      CHANGE_PASSWORD_URL: https://accounts.${OT_DOMAIN}/auth/realms/${KC_REALM_ID:-opentalk}/account/
+      ERROR_REPORT_ADDRESS: ${ERROR_REPORT_ADDRESS:-reports@example.com}
+      LIBRAVATAR_DEFAULT_IMAGE: ${LIBRAVATAR_DEFAULT_IMAGE:-identicon}
+      VIDEO_BACKGROUNDS: >-
+        [{
+          altText: 'OpenTalk',
+          url: '/assets/videoBackgrounds/elevate-bg.png',
+          thumb: '/assets/videoBackgrounds/thumbs/elevate-bg-thumb.png',
+        }]
+      IS_BETA_RELEASE: ${IS_BETA_RELEASE:-false}
+      FEATURE_USER_SEARCH: ${FEATURE_USER_SEARCH:-true}
+      FEATURE_TIMER: ${FEATURE_TIMER:-true}
+      FEATURE_WHITEBOARD: ${FEATURE_WHITEBOARD:-true}
+      FEATURE_PROTOCOL: ${FEATURE_PROTOCOL:-true}
+      FEATURE_RECORDING: ${FEATURE_RECORDING:-false}
+      PRODUCT_VERSION: "1.6.2"
+
+  # *** controller ***
+  controller:
+    image: ${OPENTALK_CONTAINER_IMAGE_SRC:-registry.opencode.de/opentalk/controller}:${OPENTALK_CONTAINER_IMAGE_TAG:-v0.7.0}
+    profiles: ["core", "controller"]
+    restart: always
+    ports:
+      - ${OPENTALK_CONTAINER_EXP_PORT:-8090}:11311
+    environment:
+      RUST_LOG: info,k3k=debug,janus_client=info,k3k_janus_media::mcu=OFF
+      OPENTALK_CTRL_DATABASE__URL: "postgres://${POSTGRES_USER:-ot}:${POSTGRES_PASSWORD}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-opentalk}"
+      OPENTALK_CTRL_DATABASE__MAX_CONNECTIONS: "${POSTGRES_MAX__CONNECTIONS:-100}"
+      OPENTALK_CTRL_HTTP__PORT: "${OPENTALK_CTRL_HTTP__PORT:-11311}"
+      OPENTALK_CTRL_KEYCLOAK__BASE_URL: "${OPENTALK_CTRL_KEYCLOAK__BASE_URL}" 
+      OPENTALK_CTRL_KEYCLOAK__REALM: "${OPENTALK_CTRL_KEYCLOAK__REALM:-opentalk}"
+      OPENTALK_CTRL_KEYCLOAK__CLIENT_ID: "${OPENTALK_CTRL_KEYCLOAK__CLIENT_ID:-OtBackend}"
+      OPENTALK_CTRL_KEYCLOAK__CLIENT_SECRET: "${OPENTALK_CTRL_KEYCLOAK__CLIENT_SECRET}"
+      OPENTALK_CTRL_ROOM_SERVER_MAX_VIDEO_BITRATE: "${OPENTALK_CTRL_ROOM_SERVER_MAX_VIDEO_BITRATE:-1500000}"
+      OPENTALK_CTRL_ROOM_SERVER_MAX_SCREEN_BITRATE: "${OPENTALK_CTRL_ROOM_SERVER_MAX_SCREEN_BITRATE:-8000000}"
+      OPENTALK_CTRL_ROOM_SERVER_CONNECTIONS__TO_ROUTING_KEY: "to-janus"
+      OPENTALK_CTRL_ROOM_SERVER_CONNECTIONS__EXCHANGE: "janus-exchange"
+      OPENTALK_CTRL_ROOM_SERVER_CONNECTIONS__FROM_ROUTING_KEY: "from-janus"
+      OPENTALK_CTRL_ROOM_SERVER_CONNECTIONS__EVENT_LOOPS: "8"
+      OPENTALK_CTRL_RABBIT_MQ__URL: "${OPENTALK_CTRL_RABBIT_MQ__URL:-amqp://guest:guest@rabbit/%2F}"
+      OPENTALK_CTRL_RABBIT_MQ__MAIL_TASK_QUEUE: "${OPENTALK_CTRL_RABBIT_MQ__MAIL_TASK_QUEUE:-opentalk_mailer}"
+      OPENTALK_CTRL_RABBIT_MQ__RECORDING_TASK_QUEUE: "${OPENTALK_CTRL_RABBIT_MQ__RECORDING_TASK_QUEUE:-opentalk_recorder}"
+      OPENTALK_CTRL_REDIS__URL: "${OPENTALK_CTRL_REDIS__URL:-redis://redis:6379/}"
+      OPENTALK_CTRL_MINIO__URI: "${OPENTALK_CTRL_MINIO__URI:-http://minio:9000}"
+      OPENTALK_CTRL_MINIO__BUCKET: "${OPENTALK_CTRL_MINIO__BUCKET:-s3_bucket}"
+      OPENTALK_CTRL_MINIO__ACCESS_KEY: "${OPENTALK_CTRL_MINIO__ACCESS_KEY:-minioadmin}"
+      OPENTALK_CTRL_MINIO__SECRET_KEY: "${OPENTALK_CTRL_MINIO__SECRET_KEY:-minioadmin}"
+      OPENTALK_CTRL_ENDPOINTS__EVENT_INVITE_EXTERNAL_EMAIL_ADDRESS: "${OPENTALK_CTRL_ENDPOINTS_EVENT_INVITE_EXTERNAL_EMAIL_ADDRESS:-true}"
+      OPENTALK_CTRL_ENDPOINTS__USERS_FIND_USE_KC: "${OPENTALK_CTRL_ENDPOINTS_USERS_FIND_USE_KC:-false}"
+      OPENTALK_CTRL_ENDPOINTS__DISABLE_USER_FIND: "${OPENTALK_CTRL_ENDPOINTS__DISABLE_USER_FIND:-false}"
+      OPENTALK_CTRL_SPACEDECK__URL: "${SD_ENDPOINT:-}"
+      OPENTALK_CTRL_SPACEDECK__API_KEY: "${SPACEDECK_API_TOKEN:-}"
+      OPENTALK_CTRL_ETHERPAD__URL: "${EP_ENDPOINT:-}"
+      OPENTALK_CTRL_ETHERPAD__API_KEY: "${ETHERPAD_API_KEY:-}"
+      OPENTALK_CTRL_CALL_IN__TEL: "${OPENTALK_CTRL_CALL_IN__TEL:-}"
+      OPENTALK_CTRL_CALL_IN__DEFAULT_COUNTRY_CODE: "${OPENTALK_CTRL_CALL_IN__DEFAULT_COUNTRY_CODE:-DE}"
+      OPENTALK_CTRL_CALL_IN__ENABLE_PHONE_MAPPING: "${OPENTALK_CTRL_CALL_IN__ENABLE_PHONE_MAPPING:-false}"
+    #volumes:
+    #  - ${OPENTALK_CONTAINER_CONFIG_FILE:-./config/controller.toml}:/controller/config.toml
+
+  # *** obelisk ***
+  obelisk:
+    image: ${OT_OBELISK_IMAGE_SRC:-registry.opencode.de/opentalk/obelisk}:${OT_OBELISK_IMAGE_TAG:-v0.5.0}
+    profiles: ["obelisk"]
+    network_mode: host
+    restart: always
+    environment:
+      RUST_LOG: ${RUST_LOG:-info}
+      GST_DEBUG: ${GST_DEBUG:-2}
+      OPENTALK_OBLSK__CLIENT_SECRET: "${OPENTALK_OBLSK__CLIENT_SECRET:-}"
+    volumes:
+      - ${OT_OBELISK_CONFIG_FILE:-./config/obelisk.toml}:/obelisk/config.toml
+
+  # *** mail worker ***
+  smtp-mailer:
+    image: ${MAIL_WORKER_IMAGE_SRC:-registry.opencode.de/opentalk/smtp-mailer}:${MAIL_WORKER_IMAGE_TAG:-v0.4.2}
+    profiles: ["smtp-mailer"]
+    restart: always
+    volumes:
+      - ${MAIL_WORKER_CONFIG_FILE:-./config/smtp-mailer.toml}:/opt/smtp-mailer/config.toml
+
+  # *** recorder ***
+  recorder:
+    image: ${RECORDER_IMAGE_SRC:-registry.opencode.de/opentalk/recorder}:${RECORDER_IMAGE_TAG:-v0.1.0}
+    profiles: ["recorder"]
+    restart: always
+    network_mode: host
+    environment:
+      RUST_LOG: ${RUST_LOG:-info}
+      OPENTALK_REC_AUTH__ISSUER: "https://accounts.${OT_DOMAIN}/auth/realms/${KC_REALM_ID:-opentalk}"  
+      OPENTALK_REC_AUTH__CLIENT_ID: "Recorder"
+      OPENTALK_REC_AUTH__CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET_RECORDER:-}
+      OPENTALK_REC_RABBITMQ__URI: "amqp://rabbit/%2F"
+      OPENTALK_REC_RABBITMQ__QUEUE: "opentalk_recorder"
+      OPENTALK_REC_CONTROLLER__DOMAIN: "controller.${OT_DOMAIN}" 
+    volumes:
+      - ${RECORDER_CONFIG_FILE:-./config/recorder.toml}:/recorder/config.toml
+
+  # *** janus gateway***
+  janus:
+    image: ${JANUS_IMAGE_SRC:-registry.opencode.de/opentalk/janus-gateway}:${JANUS_IMAGE_TAG:-v0.13.4}
+    profiles: ["core", "janus"]
+    restart: always
+    network_mode: host
+    command:
+      - janus
+    environment:
+      WAITTIMEOUT: ${JANUS_WAITTIMEOUT:-30}
+      JANUS_RABBITMQ_HOST: ${JANUS_RABBITMQ_HOST:-127.0.0.1}
+      JANUS_RABBITMQ_PORT: ${JANUS_RABBITMQ_EXP_NODE_PORT:-5672}
+      JANUS_DISABLE_WEBSOCKET: ${JANUS_DISABLE_WEBSOCKET:-true}
+      JANUS_DISABLE_HTTP: ${JANUS_DISABLE_HTTP:-true}
+      JANUS_EXCHANGE: ${JANUS_EXCHANGE:-janus-exchange}
+      JANUS_QUEUE_NAME: ${JANUS_QUEUE_NAME:-janus-gateway}
+      JANUS_EXCHANGE_TYPE: ${JANUS_EXCHANGE_TYPE:-topic}
+      JANUS_QUEUE_INCOMING: ${JANUS_QUEUE_INCOMING:-to-janus}
+      JANUS_ROUTING_KEY_OUTGOING: ${JANUS_ROUTING_KEY_OUTGOING:-from-janus}
+      JANUS_ICE_IF: ${JANUS_ICE_IF:-eth0}
+      JANUS_UDP_PORT_RANGE: ${JANUS_UDP_PORT_RANGE:-20000-25000}
+      JANUS_ICE_LITE: ${JANUS_ICE_LITE:-true}
+      JANUS_EVENT_LOOPS: ${JANUS_EVENT_LOOPS:-8}
+      JANUS_IGNORE_MDNS: ${JANUS_IGNORE_MDNS:-true}
+
+
+  # *** spacedeck ***
+  whiteboard:
+    image: ${SD_IMAGE_SRC:-registry.opencode.de/opentalk/spacedeck}:${SD_IMAGE_TAG:-v1.0.2}
+    profiles: ["whiteboard"]
+    restart: always
+    environment:
+      SD_HOST: ${SD_HOST:-0.0.0.0}
+      SD_PORT: ${SD_PORT:-9666}
+      SD_ENDPOINT: ${SD_ENDPOINT:-}
+      SD_API_TOKEN: ${SD_API_TOKEN:-}
+      SD_INVITE_CODE: ${SD_INVITE_CODE:-}
+    ports:
+      - "${SD_EXP_PORT:-9666}:${SD_PORT:-9666}"
+
+  # *** etherpad ***
+  pad:
+    image: ${EP_IMAGE_SRC:-registry.opencode.de/opentalk/etherpad}:${EP_IMAGE_TAG:-v1.0.2}
+    profiles: ["pad"]
+    restart: always
+    environment:
+      EP_APIKEY: ${EP_APIKEY:-}
+      TRUST_PROXY: ${TRUST_PROXY:-true}
+      DEFAULT_PAD_TEXT: ${DEFAULT_PAD_TEXT:-Welcome to OpenTalk}
+      SUPPRESS_ERRORS_IN_PAD_TEXT: ${SUPPRESS_ERRORS_IN_PAD_TEXT:-true}
+    ports:
+      - "${EP_EXP_PORT:-9001}:${EP_PORT:-9001}"
+
+    # *** KEYCLOAK ***
+  keycloak:
+    image: quay.io/keycloak/keycloak:${KC_IMAGE_TAG:-20.0}
+    profiles: ["core", "keycloak"]
+    restart: always
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_REALM_ID: ${KC_REALM_ID:-opentalk}
+      KC_REALM_NAME: ${KC_REALM_NAME:-opentalk}
+      KC_REALM_DISPLAYNAME: ${KC_REALM_DISPLAYNAME:-opentalk}
+      KEYCLOAK_CLIENT_SECRET_CONTROLLER: ${KEYCLOAK_CLIENT_SECRET_CONTROLLER:-}
+      KEYCLOAK_CLIENT_SECRET_OBELISK: ${KEYCLOAK_CLIENT_SECRET_OBELISK:-}
+      KEYCLOAK_CLIENT_SECRET_RECORDER: ${KEYCLOAK_CLIENT_SECRET_RECORDER:-}
+      KC_DOMAIN: ${OT_DOMAIN}
+      KC_HOSTNAME: "accounts.${OT_DOMAIN}"
+      KC_HTTP_RELATIVE_PATH: ${KC_HTTP_RELATIVE_PATH:-/auth}
+      KC_PROXY: ${KC_PROXY:-edge}
+      KC_TESTUSER_ENABLE: ${KC_TESTUSER_ENABLE:-false}
+    entrypoint: []
+    command:
+      - /bin/sh
+      - -c
+      - |
+          /opt/keycloak/bin/kc.sh build --health-enabled=true --metrics-enabled=true
+          /opt/keycloak/bin/kc.sh start --import-realm --optimized
+    user: 0:0
+    volumes:
+      - ${KC_HOST_DATA_DIR:-./data/kc_data}:/opt/keycloak/data/:Z
+      - ${KC_HOST_POVIDER_DIR:-./data/kc_provider}:/opt/keycloak/providers:Z
+    ports:
+      - ${KC_EXP_PORT:-8087}:8080
+    healthcheck:
+      test: curl -fsS http://keycloak:8080/auth/health/ready -o - | grep UP
+      interval: 20s
+      timeout: 120s
+      retries: 10
+ 
+  # *** POSTGRES ***
+  postgres:
+    image: postgres:${POSTGRES_IMAGE_TAG:-15-alpine}
+    profiles: ["core", "postgres", "controller"]
+    volumes:
+      - ${POSTGRES_HOST_DATA_DIR:-./data/pg_data}:/var/lib/postgresql/data
+    restart: always
+    # ports:
+    #  - ${POSTGRES_EXP_PORT:-5432}:5432
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-opentalk}
+      POSTGRES_USER: ${POSTGRES_USER:-ot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+ 
+  # *** AUTOHEAL ***
+  autoheal:
+    image: willfarrell/autoheal:${AUTOHEAL_IMAGE_TAG:-latest}
+    profiles: ["core", "keycloak", "postgres", "rabbit", "web-frontend", "controller", "janus"]
+    restart: always
+    environment:
+      AUTOHEAL_CONTAINER_LABEL: all
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  # *** RabbitMQ ***
+  rabbit:
+    image: rabbitmq:${RABBITMQ_IMAGE_TAG:-3.12-management-alpine}
+    profiles: ["core", "rabbit", "controller", "obelisk", "smtp-mailer", "recorder"]
+    restart: always
+    ports:
+      - ${RABBITMQ_EXP_NODE_PORT:-127.0.0.1:5672}:5672
+      - ${RABBITMQ_EXP_UI_PORT:-127.0.0.1:15672}:15672
+    environment:
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: -rabbit consumer_timeout 30000
+    healthcheck:
+      test: rabbitmq-diagnostics -q check_running && rabbitmq-diagnostics -q check_local_alarms
+      interval: 10s
+      timeout: 15s
+      retries: 5
+ 
+  # *** Redis ***
+  redis:
+    image: redis:${REDIS_IMAGE_TAG:-7-alpine}
+    profiles: ["core", "redis", "controller"]
+    restart: always
+    ports:
+      - ${REDIS_EXP_PORT:-127.0.0.1:6379}:${REDIS_EXP_PORT:-6379}
+
+  # *** minio ***
+  minio:
+    image: minio/minio:${MINIO_IMAGE_TAG:-RELEASE.2023-07-21T21-12-44Z}
+    profiles: ["core", "minio", "controller"]
+    restart: always
+    command: minio server /data
+    volumes:
+      - ./data/minio:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}

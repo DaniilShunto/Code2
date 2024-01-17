@@ -1,0 +1,35 @@
+# SPDX-FileCopyrightText: OpenTalk GmbH <mail@opentalk.eu>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+[package]
+name = "opentalk-whiteboard"
+edition = "2021"
+license = "EUPL-1.2"
+authors.workspace = true
+version.workspace = true
+publish = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+controller-settings = { path = "../controller-settings", package = "opentalk-controller-settings" }
+database = { path = "../database", package = "opentalk-database" }
+log.workspace = true
+redis-args = { path = "../redis-args" }
+redis.workspace = true
+signaling-core = { path = "../signaling-core", package = "opentalk-signaling-core" }
+types = { path = "../types", package = "opentalk-types", features = ["backend"] }
+reqwest = { workspace = true, features = [
+    "json",
+    "cookies",
+    "rustls-tls-native-roots",
+    "stream",
+] }
+serde.workspace =  true
+anyhow.workspace = true
+url.workspace = true
+bytes.workspace = true
+futures.workspace = true
+async-trait.workspace = true
+tracing.workspace = true

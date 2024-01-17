@@ -1,0 +1,14 @@
+{
+  "parts": [
+    {
+      "name": "read_session",
+      "hooks": {
+        "expressCreateServer": "ep_read_session/index:registerRoute",
+        "authorize": "ep_read_session/index:authorize",
+        "authenticate": "ep_read_session/index:authenticate",
+        "preAuthorize": "ep_read_session/index:preAuthorize"
+
+      }
+    }
+  ]
+}

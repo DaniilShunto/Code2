@@ -1,0 +1,16 @@
+# SPDX-FileCopyrightText: OpenTalk GmbH <mail@opentalk.eu>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+---
+version: "3.3"
+services:
+  spacedeck:
+    image: ot-spacedeck
+    environment:
+      - SD_HOST=0.0.0.0
+      - SD_PORT=9666
+      - SD_ENDPOiNT=http://localhost:9666
+      - SD_API_TOKEN=controller
+    ports:
+      - "9666:9666"

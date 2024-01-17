@@ -1,0 +1,29 @@
+# SPDX-FileCopyrightText: OpenTalk GmbH <mail@opentalk.eu>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+[package]
+name = "opentalk-shared-folder"
+edition = "2021"
+license = "EUPL-1.2"
+authors.workspace = true
+version.workspace = true
+publish = false
+
+[dependencies]
+anyhow.workspace = true
+async-trait.workspace = true
+db-storage = { path = "../db-storage", package = "opentalk-db-storage" }
+database = { path = "../database", package = "opentalk-database" }
+log.workspace = true
+redis-args = { path = "../redis-args" }
+redis.workspace = true
+signaling-core = { path = "../signaling-core", package = "opentalk-signaling-core" }
+tracing.workspace = true
+types = { path = "../types", package = "opentalk-types", features = ["backend"] }
+
+[dev-dependencies]
+pretty_assertions.workspace = true
+serial_test.workspace = true
+test-util = { path = "../test-util", package = "opentalk-test-util", features = ["controller"]}
+actix-rt.workspace = true

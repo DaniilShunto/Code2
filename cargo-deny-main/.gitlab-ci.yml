@@ -1,0 +1,66 @@
+# SPDX-FileCopyrightText: OpenTalk GmbH <mail@opentalk.eu>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+---
+stages:
+  - lint
+  - prepare
+  - build
+
+variables:
+  CARGO_HOME: ${CI_PROJECT_DIR}/.cargo
+  GIT_SUBMODULE_STRATEGY: recursive
+
+lint:licensing:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+  stage: lint
+  image:
+    name: fsfe/reuse:latest
+    entrypoint: ['']
+  script:
+    - reuse lint
+
+prepare:get_tag:
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == 'trigger'
+  stage: prepare
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache git
+  script:
+    - cd cargo-deny
+    - echo "BUILD_VERSION=$(git describe --tags `git rev-list --tags --max-count=1`)" >> ../build.env
+  artifacts:
+    reports:
+      dotenv: build.env
+
+build:container:
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == 'trigger'
+  stage: build
+  dependencies:
+    - prepare:get_tag
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: ['']
+  script:
+    - echo BV $BUILD_VERSION
+    - mkdir -p /kaniko/.docker
+    - >
+      echo
+      "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"$(echo -n ${CI_REGISTRY_USER}:${CI_REGISTRY_PASSWORD} | base64)\"}}}" >
+      /kaniko/.docker/config.json
+    - >
+      /kaniko/executor
+      --registry-mirror=mirror.gcr.io
+      --context $CI_PROJECT_DIR
+      --dockerfile $CI_PROJECT_DIR/ci/Dockerfile
+      --destination $CI_REGISTRY_IMAGE:$BUILD_VERSION
+      --destination $CI_REGISTRY_IMAGE:latest
+      --build-arg BUILD_VERSION=$BUILD_VERSION
+      --force

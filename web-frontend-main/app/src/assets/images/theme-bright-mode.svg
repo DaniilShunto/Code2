@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="195" height="137" viewBox="0 0 195 137">
+  <defs>
+    <filter id="Rechteck_3892" x="0" y="0" width="195" height="137" filterUnits="userSpaceOnUse">
+      <feOffset dy="3" input="SourceAlpha"/>
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feFlood flood-opacity="0.161"/>
+      <feComposite operator="in" in2="blur"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+  </defs>
+  <g id="bright_mode" transform="translate(-107 -86)">
+    <g transform="matrix(1, 0, 0, 1, 107, 86)" filter="url(#Rechteck_3892)">
+      <rect id="Rechteck_3892-2" data-name="Rechteck 3892" width="177" height="119" rx="4" transform="translate(9 6)" fill="#fff"/>
+    </g>
+    <path id="Rechteck_3764" data-name="Rechteck 3764" d="M4,0H36a0,0,0,0,1,0,0V119a0,0,0,0,1,0,0H4a4,4,0,0,1-4-4V4A4,4,0,0,1,4,0Z" transform="translate(116 92)" fill="#f4f4f8"/>
+    <path id="Rechteck_3893" data-name="Rechteck 3893" d="M4,0H173a4,4,0,0,1,4,4V27a0,0,0,0,1,0,0H0a0,0,0,0,1,0,0V4A4,4,0,0,1,4,0Z" transform="translate(116 92)" fill="#f1f1f7"/>
+    <circle id="Ellipse_284" data-name="Ellipse 284" cx="6" cy="6" r="6" transform="translate(160 128)" fill="#f4f4f8"/>
+    <rect id="Rechteck_3894" data-name="Rechteck 3894" width="71" height="1" transform="translate(178 130)" fill="#dfdfe3"/>
+    <rect id="Rechteck_3895" data-name="Rechteck 3895" width="51" height="1" transform="translate(178 133)" fill="#dfdfe3"/>
+    <rect id="Rechteck_3896" data-name="Rechteck 3896" width="27" height="1" transform="translate(178 136)" fill="#dfdfe3"/>
+  </g>
+</svg>

@@ -1,0 +1,16 @@
+#!/bin/bash
+
+set -xe
+
+SCRIPT_DIR=$(dirname "$0")
+# shellcheck source=ci/include/clone.sh
+. "$SCRIPT_DIR"/include/clone.sh
+REPO_NAME=${REPO_NAME_RECORDER:-opentalk/backend/services/recorder}
+REPO_BRANCH=${REPO_BRANCH_RECORDER:-main}
+
+clone_repo "$REPO_NAME" "$REPO_BRANCH"
+
+mkdir -p \
+admin-docs/recorder
+
+deploy_to admin-docs/recorder ".tmp/$REPO_NAME/docs/admin/*"

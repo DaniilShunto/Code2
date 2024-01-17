@@ -1,0 +1,15 @@
+#!/bin/bash
+
+set -xe
+
+SCRIPT_DIR=$(dirname "$0")
+# shellcheck source=ci/include/clone.sh
+. "$SCRIPT_DIR"/include/clone.sh
+REPO_NAME=${REPO_NAME_OBELISK:-opentalk/backend/services/obelisk}
+REPO_BRANCH=${REPO_BRANCH_OBELISK:-main}
+
+clone_repo "$REPO_NAME" "$REPO_BRANCH"
+
+mkdir -p admin-docs/obelisk
+
+deploy_to admin-docs/obelisk ".tmp/$REPO_NAME/docs/admin/*"

@@ -1,0 +1,19 @@
+# SPDX-FileCopyrightText: OpenTalk GmbH <mail@opentalk.eu>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+[package]
+name = "opentalk-cache"
+edition = "2021"
+license = "EUPL-1.2"
+authors.workspace = true
+version.workspace = true
+publish = false
+
+[dependencies]
+moka = { version = "0.12", default-features = false, features = ["quanta", "atomic64", "future"] }
+redis = { workspace = true, features = ["connection-manager", "tokio-comp"] }
+serde.workspace = true
+bincode.workspace = true
+thiserror.workspace = true
+siphasher = "1.0"

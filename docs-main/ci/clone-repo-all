@@ -1,0 +1,12 @@
+#!/bin/bash
+
+set -xe
+
+SCRIPT_DIR=$(dirname "$0")
+
+"$SCRIPT_DIR"/clone-repo-support
+"$SCRIPT_DIR"/clone-repo-controller
+"$SCRIPT_DIR"/clone-repo-controller-enterprise
+"$SCRIPT_DIR"/clone-repo-recorder
+"$SCRIPT_DIR"/clone-repo-smtp-mailer
+"$SCRIPT_DIR"/clone-repo-obelisk

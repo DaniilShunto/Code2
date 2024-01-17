@@ -1,0 +1,22 @@
+# SPDX-FileCopyrightText: OpenTalk GmbH <mail@opentalk.eu>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+---
+version: "3.3"
+services:
+  etherpad:
+    image: ot-etherpad:latest
+    # See the `APIKEY` section in the readme file for more info.
+    # volumes:
+    #   - type: bind
+    #     source: ./etherpad/APIKEY.txt
+    #     target: /opt/etherpad-lite/APIKEY.txt
+    environment:
+      # Set TRUST_PROXY if the etherpad is behind a reverse proxy
+      # - TRUST_PROXY=true
+      - EP_APIKEY=secret123
+      # - ADMIN_PASSWORD=admin123
+    ports:
+      - "9001:9001"
+

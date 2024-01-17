@@ -1,0 +1,22 @@
+#!/bin/bash
+
+set -xe
+
+SCRIPT_DIR=$(dirname "$0")
+# shellcheck source=ci/include/clone.sh
+. "$SCRIPT_DIR"/include/clone.sh
+REPO_NAME=${REPO_NAME_CONTROLLER:-opentalk/backend/services/controller}
+REPO_BRANCH=${REPO_BRANCH_CONTROLLER:-main}
+
+clone_repo "$REPO_NAME" "$REPO_BRANCH"
+
+mkdir -p \
+  openapi \
+  developer-docs/controller/signaling/community \
+  admin-docs/controller \
+  i18n/de/docusaurus-plugin-content-docs-admin/current/ \
+  i18n/de/docusaurus-plugin-content-docs-developer/current/
+
+deploy_to developer-docs/controller/signaling/community ".tmp/$REPO_NAME/docs/signaling/*"
+deploy_to admin-docs/controller ".tmp/$REPO_NAME/docs/admin/*"
+deploy_to openapi/controller.yaml ".tmp/$REPO_NAME/api/controller/frontend_api.yaml"

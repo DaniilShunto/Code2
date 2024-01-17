@@ -1,0 +1,41 @@
+SPDX-FileCopyrightText: OpenTalk GmbH <mail@opentalk.eu>
+SPDX-License-Identifier: EUPL-1.2
+
+diff --git a/src/node/hooks/express/webaccess.js b/src/node/hooks/express/webaccess.js
+index 8a183681..96d027d3 100644
+--- a/src/node/hooks/express/webaccess.js
++++ b/src/node/hooks/express/webaccess.js
+@@ -73,7 +73,12 @@ const checkAccess = async (req, res, next) => {
+     const grant = async (level) => {
+       level = exports.normalizeAuthzLevel(level);
+       if (!level) return false;
+-      const user = req.session.user;
++      const session = req.session;
++      if (!session) {
++        console.log("Attempted to authorize without session");
++        return false;
++      }
++      const user = session.user;
+       if (user == null) return true; // This will happen if authentication is not required.
+       const encodedPadId = (req.path.match(/^\/p\/([^/]*)/) || [])[1];
+       if (encodedPadId == null) return true;
+@@ -184,7 +189,6 @@ const checkAccess = async (req, res, next) => {
+     return res.status(500).send('Internal Server Error');
+   }
+   const {username = '<no username>'} = req.session.user;
+-  httpLogger.info(`Successful authentication from IP ${req.ip} for user ${username}`);
+ 
+   // ///////////////////////////////////////////////////////////////////////////////////////////////
+   // Step 4: Try to access the thing again. If this fails, give the user a 403 error. Plugins can
+@@ -192,7 +196,10 @@ const checkAccess = async (req, res, next) => {
+   // a login page).
+   // ///////////////////////////////////////////////////////////////////////////////////////////////
+ 
+-  if (await authorize()) return next();
++  if (await authorize()) {
++    httpLogger.info(`Successful authentication from IP ${req.ip} for user ${username}`);
++    return next();
++  }
+   if (await aCallFirst0('authzFailure', {req, res})) return;
+   if (await aCallFirst0('authFailure', {req, res, next})) return;
+   // No plugin handled the authorization failure.

@@ -1,0 +1,27 @@
+# SPDX-FileCopyrightText: OpenTalk GmbH <mail@opentalk.eu>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+[package]
+name = "opentalk-mail-worker-protocol"
+edition = "2021"
+license = "EUPL-1.2"
+authors.workspace = true
+version.workspace = true
+publish = false
+
+[dependencies]
+serde.workspace = true
+uuid = { workspace = true, features = ["serde"] }
+chrono = { workspace = true, features = ["serde"] }
+db-storage = { path = "../db-storage", package = "opentalk-db-storage", optional = true }
+keycloak-admin = { path = "../keycloak-admin", optional = true }
+types = { path = "../types", package = "opentalk-types" }
+
+[dev-dependencies]
+serde_json.workspace = true
+pretty_assertions.workspace = true
+
+[features]
+default = []
+client = ["db-storage", "keycloak-admin"]

@@ -1,0 +1,47 @@
+# SPDX-FileCopyrightText: OpenTalk GmbH <mail@opentalk.eu>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+---
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.1.0
+    hooks:
+      - id: trailing-whitespace
+        stages: [commit]
+      - id: end-of-file-fixer
+        stages: [commit]
+      - id: check-yaml
+        stages: [commit]
+      - id: check-added-large-files
+        stages: [commit]
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    # Use the sha or tag you want to point at
+    rev: v2.5.1
+    hooks:
+      - id: prettier
+        name: Run Prettier
+        types_or: [javascript, ts, tsx]
+        additional_dependencies:
+          - prettier@2.5.1
+          - '@trivago/prettier-plugin-sort-imports@3.1.1'
+  - repo: local
+    hooks:
+      - id: jest
+        name: Run Jest tests
+        always_run: true
+        stages: [push]
+        entry: yarn test --watchAll=false --ci
+        pass_filenames: false
+        language: system
+        types_or: [javascript, ts, tsx]
+      - id: eslint
+        name: Run eslint
+        # *.js, *.jsx, *.ts and *.tsx
+        files: \.[jt]sx?$
+        types: [file]
+        language: system
+        entry: yarn lint
+        pass_filenames: false

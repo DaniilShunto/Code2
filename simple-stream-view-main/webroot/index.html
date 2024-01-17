@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset=utf-8 />
+  <title>Stream View</title>
+  <link href="video-js-8.6.1.css" rel="stylesheet">
+</head>
+
+<body>
+  <video id="recorder-video" class="video-js" controls width="1920" height="1080" />
+
+  <script src="video-js-8.6.1.min.js"></script>
+  <script>
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+    const room = urlParams.get("room") ?? "recorder";
+    const player = videojs("recorder-video", {
+      autoplay: true,
+      sources: [{
+        src: `live/${room}/index.m3u8`,
+        type: "application/x-mpegURL",
+      }]
+    });
+  </script>
+</body>
+
+</html>

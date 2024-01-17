@@ -1,0 +1,104 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: OpenTalk Frontend
+Upstream-Contact: OpenTalk GmbH <mail@opentalk.eu>
+Source: https://git.opentalk.dev/opentalk/k3k-web-frontend/
+
+Files:
+ yarn.lock
+ .yarnrc.yml
+ README.md
+ CHANGELOG.md
+ package.json
+ tsconfig.base.json
+ app/tsconfig.dev.json
+ app/tsconfig.hot.json
+ app/hotReload/packages.tsconfig.example.json
+ app/hotReload/Instructions.md
+ app/package.json
+ app/tsconfig.json
+ app/README.md
+ app/.depcheckrc
+ packages/**/*.snap
+Copyright: OpenTalk GmbH <mail@opentalk.eu>
+License: EUPL-1.2
+
+Files:
+ app/public/assets/fonts/opentalk*
+ app/public/assets/videoBackgrounds/*
+ app/public/favicon.png
+ app/public/icon-*.png
+ app/src/assets/backgrounds/elevate_background.svg
+ app/src/assets/images/*.svg
+ app/src/assets/images/*.png
+ app/public/assets/background.svg
+ app/public/assets/quick_start/de/*.svg
+ app/public/assets/quick_start/en/*.svg
+ packages/common/assets/icons/*.svg
+Copyright: OpenTalk GmbH <mail@opentalk.eu>
+License: CC-BY-NC-ND-4.0
+
+
+Files:
+ packages/common/babel.config.cjs
+ packages/common/.eslintrc.cjs
+ packages/common/CHANGELOG.md
+Copyright: OpenTalk GmbH <mail@opentalk.eu>
+License: EUPL-1.2
+
+Files:
+ .yarn/releases/yarn-3.3.1.cjs
+Copyright:
+ 2015, Rebecca Turner
+ Node.js contributors
+ 2014-present Jon Schlinkert
+License: MIT
+Source: https://repo.yarnpkg.com/3.3.1/packages/yarnpkg-cli/bin/yarn.js
+
+Files:
+ .yarn/plugins/@yarnpkg/plugin-typescript.cjs
+Copyright:
+ 2016-present, Yarn Contributors
+License: LicenseRef-BSD2-yarnpkg
+Source: https://yarnpkg.com/package/@yarnpkg/plugin-typescript
+
+Files:
+ .yarn/plugins/@yarnpkg/plugin-workspace-tools.cjs
+Copyright:
+ 2014-present, Jon Schlinkert
+ 2016-present, Yarn Contributors
+License: LicenseRef-BSD2-yarnpkg
+Source: https://yarnpkg.com/package/@yarnpkg/plugin-workspace-tools
+
+Files:
+ .yarn/plugins/@yarnpkg/plugin-outdated.cjs
+Copyright:
+ 2014-present Jon Schlinkert
+ 2022 Mark Skelton
+License: LicenseRef-ISC-yarn-plugin-outdated
+Source: https://mskelton.dev/yarn-outdated/v2
+
+Files: packages/i18next-fluent/*
+Copyright:
+ 2018 i18next
+ 2020 Jan Mühlemann <jan.muehlemann@gmail.com>
+ 2022 OpenTalk GmbH <mail@opentalk.eu>
+License: LicenseRef-MIT-i18next-fluent
+
+Files: packages/react-redux-appauth/*
+Copyright:
+ 2020 The OpenID Foundation
+ 2022 OpenTalk GmbH <mail@opentalk.eu>
+License: Apache-2.0
+
+Files: packages/redux-oidc/*
+Copyright:
+ 2022 Daniél Kerkmann
+ 2022 OpenTalk GmbH <development@opentalk.eu>
+License: MIT
+
+Files: packages/fluent_conv/*
+Copyright:
+ 2020 Jan Mühlemann <jan.muehlemann@gmail.com>
+ 2022 OpenTalk GmbH <mail@opentalk.eu>
+License: LicenseRef-MIT-fluent_conv
+

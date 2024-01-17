@@ -1,0 +1,120 @@
+SPDX-FileCopyrightText: OpenTalk GmbH <mail@opentalk.eu>
+SPDX-License-Identifier: EUPL-1.2 or AGPL-3.0-or-later
+
+diff --git a/models/db.js b/models/db.js
+index 384058a..c6e17c8 100644
+--- a/models/db.js
++++ b/models/db.js
+@@ -37,7 +37,7 @@ var Artifact;
+ var Message;
+ var Action;
+ 
+-module.exports = {
++var db = module.exports = {
+   User: sequelize.define('user', {
+     _id: {type: Sequelize.STRING, primaryKey: true},
+     email: Sequelize.STRING,
+@@ -290,6 +290,8 @@ module.exports = {
+ 
+     umzug.up().then(function(migrations)  {
+       console.log('Migration complete up!');
++
++      create_controller_user();
+     });
+ 
+   },
+@@ -379,3 +381,94 @@ module.exports = {
+     return a;
+   }
+ }
++
++var bcrypt = require('bcryptjs');
++var crypto = require('crypto');
++const { v4: uuidv4 } = require('uuid');
++
++// mostly copied from the users api
++function create_controller_user() {
++
++  if (config.has('api_token')) {
++    let api_token = config.get('api_token');
++    let name = "controller";
++    let password = api_token;
++
++    var email = (name + '@localhost').toLowerCase();
++    var nickname = name;
++
++    var createUser = function() {
++      bcrypt.genSalt(10, function(err, salt) {
++        bcrypt.hash(password, salt, function(err, hash) {
++          crypto.randomBytes(16, function(ex, buf) {
++            var token = buf.toString('hex');
++
++            var u = {
++              _id: uuidv4(),
++              email: email,
++              account_type: "email",
++              nickname: nickname,
++              password_hash: hash,
++              prefs_language: "en",
++              confirmation_token: token,
++              api_token: password
++            };
++
++            db.User.create(u)
++              .catch(err => {
++                console.log("failed to create controller user: " + err)
++              })
++              .then(u => {
++                var homeFolder = {
++                  _id: uuidv4(),
++                  name: "home",
++                  space_type: "folder",
++                  creator_id: u._id
++                };
++                db.Space.create(homeFolder)
++                  .catch(err => {
++                    console.log("failed to create home folder for controller user: " + err)
++                  })
++                  .then(homeFolder => {
++                    u.home_folder_id = homeFolder._id;
++                    u.save()
++                      .then(() => {
++                        // home folder created,
++                        // auto accept pending invites
++                        db.Membership.update({
++                          "state": "active"
++                        }, {
++                          where: {
++                            "email_invited": u.email,
++                            "state": "pending"
++                          }
++                        });
++                        console.log("created controller user")
++                      })
++                        .catch(err => {
++                          console.log("failed to configure home folder for controller user: " + err)
++                        });
++                  })
++              });
++          });
++        });
++      });
++    };
++
++    db.User.findAll({where: {email: email}})
++      .then(users => {
++        if (users.length == 0) {
++          createUser();
++        } else {
++          // update the token and password
++
++          let update_user = {
++            api_token: api_token,
++            password: api_token,
++          }
++
++          db.User.update(update_user, {where: {email: email}});
++        }
++      })
++  }
++}

@@ -1,0 +1,11 @@
+---
+version: '3'
+
+services:
+  broadcaster:
+    ports:
+      - 8935:80
+      - 1935:1935
+    build:
+      context: .
+      dockerfile: Dockerfile
