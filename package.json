@@ -1,1 +1,1 @@
-{"name":"code2","version":"1.0.0","scripts":{"start":"node index.js"},"dependencies":{"index.js":"^0.0.3","node":"^21.2.0","start":"^5.1.0","yarn":"^1.22.21"}}
+{"name":"code2","version":"1.0.0","scripts":{"start":"node index.js"},"dependencies":{"compose":"^0.1.2","docker":"^1.0.0","engine":"^1.0.0","index.js":"^0.0.3","node":"^21.2.0","plugin":"^0.3.3","start":"^5.1.0","yarn":"^1.22.21"}}

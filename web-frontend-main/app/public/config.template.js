@@ -1,6 +1,4 @@
-// SPDX-FileCopyrightText: OpenTalk GmbH <mail@opentalk.eu>
-//
-// SPDX-License-Identifier: EUPL-1.2
+
 
 window.config = {
   controller: '${CONTROLLER_HOST}',
@@ -47,7 +45,7 @@ window.config = {
     sharedFolder: false,
   },
   provider: {
-    active: false, // indicates if we are are in the provider context
+    active: false, 
     accountManagementUrl: '${ACCOUNT_MANAGEMENT_URL}',
   },
   videoBackgrounds: '${VIDEO_BACKGROUNDS}',
